@@ -1,5 +1,4 @@
 """Operator restriction controls. Rendering and signing in never invoke a provider."""
-import json
 import uuid
 
 import streamlit as st
@@ -34,7 +33,7 @@ def render_access():
         st.session_state[SESSION] = uuid.uuid4().hex
     token, session = credentials()
     if not control.authorized(token, session):
-        with st.expander('Restricted live access'):
+        with st.expander('Operator login'):
             st.caption('Saved reports work offline. Only authorized operators may initiate paid requests.')
             with st.form('live_operator_login', clear_on_submit=True):
                 password = st.text_input('Operator access code', type='password', max_chars=256)
@@ -52,23 +51,14 @@ def render_access():
         st.session_state.pop(TOKEN, None)
         st.rerun()
     try:
-        control.ready(token, session)
+        control.can_start(token, session)
     except LiveDenied as exc:
-        with st.expander('Administrator spending authorization', expanded=True):
-            st.info(str(exc))
-            challenge = json.dumps(control.challenge(), indent=2)
-            st.download_button('Download activation challenge', challenge, 'leakprobe-live-challenge.json', 'application/json')
-            st.caption('An administrator must sign this process-specific challenge locally. Restarting the app does not renew spending.')
-            with st.form('live_arm', clear_on_submit=True):
-                permit = st.text_area('Signed activation permit', max_chars=4000)
-                activate = st.form_submit_button('Apply spending authorization')
-            if activate:
-                try:
-                    control.arm(json.loads(permit), token, session)
-                    st.rerun()
-                except (LiveDenied, ValueError, TypeError):
-                    st.warning('Spending authorization was not accepted. Ask the administrator for a current permit.')
+        st.info(str(exc))
         return token, session
-    st.caption(f"Maximum reserved spend: ${control.policy.budget} per activation; "
-               f"${control.policy.reserve_usd} reserved per attempt. Failed attempts keep their reservation.")
+    with st.expander('AI usage limits'):
+        st.caption(f"{len(control.runs)} of {control.policy.max_runs} attempts used; "
+                   f"${control.spent} of ${control.policy.budget} reserved. "
+                   f"Each attempt reserves ${control.policy.reserve_usd}, including failures.")
+        st.caption('Limits are shared across browsers for this server process. Server restarts reset them. '
+                   'This is an application allowance, not a provider-side spending cap.')
     return token, session

@@ -38,12 +38,12 @@ def availability(authorization=None, browser_session=None):
         return False, INFERENCE_DISABLED_MESSAGE
     try:
         control = authority()
-        control.ready(authorization, browser_session)
+        control.can_start(authorization, browser_session)
     except LiveDenied as exc:
         return False, str(exc)
     if importlib.util.find_spec("openai") is None:
         return False, "Unavailable: deploy the restricted live entrypoint with its live runtime requirements."
-    return True, "Restricted live Nemotron is ready on request. Paid requests require current operator and spending authorization."
+    return True, "Live Nemotron is ready on request. Operator login and server AI usage limits apply."
 
 
 def provider_client(lease=None):

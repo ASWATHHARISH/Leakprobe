@@ -1,4 +1,4 @@
-# LeakProbe — offline Streamlit demonstration
+# LeakProbe — Streamlit monitoring and live investigation
 
 This independent private repository preserves the verified LeakProbe application:
 the employee UI, physics detector, canonical 500 Net3 monitoring windows, original
@@ -11,8 +11,9 @@ not a live utility connection or proof of field performance.
 - Owner: **ASWATHHARISH** (personal account).
 - Repository: **leakprobe-streamlit-demo**.
 - Visibility: **Private**. Private repository creation/upload is authorized.
-- Public code publication, licensing and hosting deployment are **not approved**.
-- No license is selected. Do not change visibility or deploy without approval.
+- Existing live app: https://leakprobe-nemotron-live.streamlit.app/.
+- No license is selected. Visibility changes, new publication and redeployment
+  of prepared changes require approval.
 - The team repository and its Git history are not part of this repository.
 
 No API credentials, real `.env`, secrets configuration, review databases, virtual
@@ -43,10 +44,14 @@ patterns without generating data, scoring cases or calling providers.
 `deploy/app.py` defaults to `LEAKPROBE_DEMO_MODE=1` and
 `LEAKPROBE_ENABLE_LIVE_AI=0`. Public-demo mode blocks inference even if a live flag
 is supplied. The offline entrypoint does not accept paid inference. A separate
-restricted entrypoint is included; see [protected live inference](docs/PROTECTED_LIVE_INFERENCE.md).
-Activation, Cloud Secrets changes and deployment require separate approval. The
-initial live configuration permits one investigation, reserves at most $0.25 for
-that attempt and caps the activation budget at $1.00. Nothing activates on push.
+live entrypoint powers the existing hosted application; see
+[live setup](docs/PROTECTED_LIVE_INFERENCE.md). Monitoring remains available to
+viewers; operator login enables explicit live requests when Cloud Secrets are valid.
+No administrator challenge, signature or permit is needed. Default limits are one
+investigation and a $0.25 application allowance, shared across browsers per server
+process. Restarts reset this allowance; it is not a provider-side spending cap.
+Page loading and navigation never initiate inference. No paid call was made to
+verify these changes. Push/redeployment still require approval.
 All five saved investigations remain unchanged, including validated LP-0405 and
 separate invalid/incomplete attempts. Historical model reports do not represent
 new inference. The 500 cached records retain 417 predicted leaks, 83 predicted
@@ -56,25 +61,24 @@ Employee reviews are temporary and scoped to a browser session. Same-session
 navigation/reruns preserve events; a new session, restart or hosting lifecycle
 may lose them. No permanent multi-user review history is claimed.
 
-## Future Community Cloud deployment — separate approval required
+## Existing Community Cloud application
 
-Do not deploy or make this repository public as part of private publication.
-If team publication rights/licensing and hosting are subsequently approved, use:
+Update only the existing live app after approval; no third app is needed:
 
 | Setting | Value |
 |---|---|
 | Repository | `ASWATHHARISH/leakprobe-streamlit-demo` |
 | Branch | `main` |
-| Main file | `deploy/app.py` |
+| Main file | `deploy/live/app.py` |
 | Python | **3.12**, selected in Community Cloud Advanced settings |
-| Requirements | Existing `deploy/requirements.txt` next to entrypoint |
+| Requirements | Existing `deploy/live/requirements.txt` next to entrypoint |
 | Theme | Existing root `.streamlit/config.toml` |
-| Secrets | Leave empty; no Nebius credentials |
+| Secrets | Five fields in [live setup](docs/PROTECTED_LIVE_INFERENCE.md), entered manually |
 
 `.python-version` is a local-tooling hint; explicitly select Python 3.12 in Cloud.
-Private-repository access and app sharing must be reviewed separately. No public
-URL is reserved or promised. No Render service or custom Cloud start command is
-needed. Official instructions: [deployment](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/deploy),
+Keep existing repository visibility and app sharing unchanged. No Render service
+or custom Cloud start command is needed. Official instructions:
+[deployment](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/deploy),
 [file organization](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/file-organization).
 
 Previous offline checks passed 110 automated tests and 12 package checks, including

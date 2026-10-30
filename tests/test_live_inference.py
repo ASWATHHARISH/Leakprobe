@@ -1,7 +1,6 @@
 """Restricted inference regressions: actual tool loop, synthetic fixtures, no network."""
 import copy
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timezone
 from decimal import Decimal
 import importlib.util
 import json
@@ -25,9 +24,7 @@ from leakprobe.ui.investigation_history import is_validated_report, select_inves
 from leakprobe.ui.operations import build_alert
 from leakprobe.ui.protected_client import ProtectedClient, provider
 
-admin = runpy.run_path(str(ROOT / 'deploy/live_admin.py'))
 PASSWORD = 'disposable-test-access-code'
-SIGNING_KEY = '12' * 32
 CHANNELS = ['pressure_243_m', 'flow_229_lps']
 ACCESS_HASH = live_policy.password_hash(PASSWORD, '34' * 16)
 
@@ -40,13 +37,12 @@ class Clock:
 
 
 def settings(clock):
-    return {'LEAKPROBE_LIVE_MODE': 'restricted', 'LEAKPROBE_LIVE_UNTIL_UTC':
-            datetime.fromtimestamp(clock() + 3600, timezone.utc).isoformat(),
+    return {'LEAKPROBE_LIVE_MODE': 'restricted',
             'NEBIUS_API_KEY': 'not-a-real-key', 'LEAKPROBE_OPERATOR_PASSWORD_HASH': ACCESS_HASH,
-            'LEAKPROBE_LIVE_ADMIN_KEY': SIGNING_KEY, 'LEAKPROBE_INPUT_USD_PER_MILLION': '2',
+            'LEAKPROBE_INPUT_USD_PER_MILLION': '2',
             'LEAKPROBE_OUTPUT_USD_PER_MILLION': '4', 'LEAKPROBE_LIVE_BUDGET_USD': '1.00',
             # Broader mocked campaigns exercise the independent budget/case limits.
-            # Deployment defaults and the first activation template permit one attempt.
+            # Deployment defaults permit one attempt per server process.
             'LEAKPROBE_LIVE_MAX_INVESTIGATIONS': '4'}
 
 
@@ -98,12 +94,11 @@ class NoNetwork(unittest.TestCase):
         self.control = live_policy.Authority(live_policy.Policy.from_settings(self.values), self.clock)
     def authorize(self, session='browser-one'):
         token = self.control.authenticate(PASSWORD, session)
-        self.control.arm(admin['sign_challenge'](self.control.challenge(), SIGNING_KEY), token, session)
         return token, session
 
 
 class PolicyTests(NoNetwork):
-    def test_first_activation_defaults_to_one_attempt_across_all_sessions(self):
+    def test_server_defaults_to_one_attempt_across_all_sessions(self):
         self.values.pop('LEAKPROBE_LIVE_MAX_INVESTIGATIONS')
         policy = live_policy.Policy.from_settings(self.values)
         self.assertEqual(policy.public()['max_runs'], 1)
@@ -118,7 +113,7 @@ class PolicyTests(NoNetwork):
         self.assertEqual(len(self.control.runs), 1)
         self.assertLessEqual(self.control.spent, Decimal('.25'))
         changed = live_policy.Policy.from_settings({**self.values, 'LEAKPROBE_LIVE_MAX_INVESTIGATIONS': '2'})
-        self.assertNotEqual(policy.fingerprint, changed.fingerprint)
+        self.assertNotEqual(policy.public(), changed.public())
 
     def test_offline_bootstrap_overrides_accidental_live_profile(self):
         with patch.dict(os.environ, {'LEAKPROBE_DEPLOYMENT_PROFILE': 'restricted_live', 'LEAKPROBE_ENABLE_LIVE_AI': '1'}):
@@ -146,28 +141,35 @@ class PolicyTests(NoNetwork):
                 self.control.authenticate('wrong-code-long-enough', 'new-browser')
         with self.assertRaises(live_policy.LiveDenied):
             self.control.authenticate(PASSWORD, 'another-browser')
-    def test_unarmed_reused_and_restart_permits_fail_closed(self):
+    def test_login_enables_without_permit_logout_does_not_renew_and_restart_invalidates_tokens(self):
         token = self.control.authenticate(PASSWORD, 'one')
-        with self.assertRaises(live_policy.LiveDenied):
-            self.control.begin(token, 'one', 'alert')
-        permit = admin['sign_challenge'](self.control.challenge(), SIGNING_KEY)
-        self.control.arm(permit, token, 'one')
-        with self.assertRaises(live_policy.LiveDenied):
-            self.control.arm(permit, token, 'one')
+        self.control.can_start(token, 'one')
+        lease = self.control.begin(token, 'one', 'alert')
+        self.control.end(lease)
+        self.control.logout(token)
+        self.control.authenticate(PASSWORD, 'one')
+        self.assertEqual(len(self.control.runs), 1)
+        self.assertEqual(self.control.spent, self.control.policy.reserve_usd)
         restarted = live_policy.Authority(self.control.policy, self.clock)
+        with self.assertRaises(live_policy.LiveDenied):
+            restarted.can_start(token, 'one')
         other = restarted.authenticate(PASSWORD, 'one')
-        with self.assertRaises(live_policy.LiveDenied):
-            restarted.arm(permit, other, 'one')
+        restarted.can_start(other, 'one')
         self.assertEqual(restarted.spent, 0)
-    def test_tampered_permit_and_wrong_signing_key_rejected(self):
-        token = self.control.authenticate(PASSWORD, 'one')
-        permit = admin['sign_challenge'](self.control.challenge(), '56' * 32)
-        with self.assertRaises(live_policy.LiveDenied):
-            self.control.arm(permit, token, 'one')
-        permit = admin['sign_challenge'](self.control.challenge(), SIGNING_KEY)
-        permit['limits']['budget_usd'] = '999'
-        with self.assertRaises(live_policy.LiveDenied):
-            self.control.arm(permit, token, 'one')
+    def test_minimal_configuration_defaults_and_missing_names_are_safe(self):
+        minimal = {name: self.values[name] for name in ('LEAKPROBE_LIVE_MODE', 'NEBIUS_API_KEY',
+                                                       'LEAKPROBE_OPERATOR_PASSWORD_HASH')}
+        policy = live_policy.Policy.from_settings(minimal)
+        self.assertEqual(policy.budget, Decimal('.25'))
+        self.assertEqual(policy.max_runs, 1)
+        self.assertEqual(policy.reserve_usd, Decimal('.23296'))
+        self.assertEqual(policy.public()['allowance_scope'], 'server_process')
+        for name in ('NEBIUS_API_KEY', 'LEAKPROBE_OPERATOR_PASSWORD_HASH'):
+            with self.assertRaises(live_policy.LiveDenied) as error:
+                live_policy.Policy.from_settings({key: value for key, value in minimal.items() if key != name})
+            self.assertIn(name, str(error.exception))
+            self.assertNotIn(ACCESS_HASH, str(error.exception))
+            self.assertNotIn('not-a-real-key', str(error.exception))
     def test_concurrent_requests_are_atomic_and_failed_reservation_not_refunded(self):
         token, session = self.authorize()
         def begin(number):
@@ -205,17 +207,40 @@ class PolicyTests(NoNetwork):
             self.control.begin(token, session, 'same-alert')
     def test_unsafe_incomplete_or_overbudget_configuration_is_denied(self):
         for key, value in (('NEBIUS_BASE_URL', 'https://untrusted.invalid/v1/'), ('NEBIUS_MODEL', 'other'),
-            ('NEBIUS_API_KEY', ''), ('LEAKPROBE_LIVE_ADMIN_KEY', 'bad'),
+            ('NEBIUS_API_KEY', ''), ('LEAKPROBE_OPERATOR_PASSWORD_HASH', 'bad'), ('LEAKPROBE_LIVE_MODE', 'public'),
             ('LEAKPROBE_INPUT_USD_PER_MILLION', 'NaN'), ('LEAKPROBE_OUTPUT_USD_PER_MILLION', '10000'),
-            ('LEAKPROBE_LIVE_BUDGET_USD', '2'), ('LEAKPROBE_LIVE_UNTIL_UTC', '2000-01-01T00:00:00Z'),
+            ('LEAKPROBE_LIVE_BUDGET_USD', '2'), ('LEAKPROBE_LIVE_BUDGET_USD', '.01'),
             ('LEAKPROBE_LIVE_MAX_INVESTIGATIONS', '0'), ('LEAKPROBE_LIVE_MAX_INVESTIGATIONS', '5'),
             ('LEAKPROBE_LIVE_MAX_INVESTIGATIONS', '1.5')):
             with self.subTest(key=key), self.assertRaises(live_policy.LiveDenied):
                 live_policy.Policy.from_settings({**self.values, key: value})
-    def test_secret_loader_uses_only_cloud_or_environment_and_never_dotenv(self):
+    def test_secret_loader_uses_cloud_only_and_never_environment_or_dotenv(self):
         with patch.dict(os.environ, {'LEAKPROBE_DEPLOYMENT_PROFILE': 'restricted_live', 'NEBIUS_API_KEY': 'server-value'}, clear=True), \
              patch('streamlit.secrets', {'NEBIUS_API_KEY': 'cloud-value', 'LEAKPROBE_LIVE_MODE': 'restricted'}):
-            self.assertEqual(live_policy.server_settings()['NEBIUS_API_KEY'], 'server-value')
+            self.assertEqual(live_policy.server_settings()['NEBIUS_API_KEY'], 'cloud-value')
+        with patch.dict(os.environ, {'LEAKPROBE_DEPLOYMENT_PROFILE': 'restricted_live', 'NEBIUS_API_KEY': 'server-value'}, clear=True), \
+             patch('streamlit.secrets', {}):
+            self.assertNotIn('NEBIUS_API_KEY', live_policy.server_settings())
+        with patch.dict(os.environ, {'LEAKPROBE_DEPLOYMENT_PROFILE': 'offline'}, clear=True), \
+             patch('streamlit.secrets', Mock()) as secrets:
+            with self.assertRaises(live_policy.LiveDenied):
+                live_policy.server_settings()
+            self.assertFalse(secrets.mock_calls)
+
+    def test_configuration_changes_fail_closed_without_resetting_allowance(self):
+        with patch.object(live_policy, 'server_settings', return_value=self.values), \
+             patch.object(live_policy, '_authority', None), \
+             patch.dict(os.environ, {'LEAKPROBE_INSPECTION_MODE': '0'}):
+            control = live_policy.authority()
+            token = control.authenticate(PASSWORD, 'one')
+            lease = control.begin(token, 'one', 'alert')
+            control.end(lease)
+            with patch.object(live_policy, 'server_settings', return_value={**self.values, 'LEAKPROBE_LIVE_MAX_INVESTIGATIONS': '1'}):
+                with self.assertRaises(live_policy.LiveDenied):
+                    live_policy.authority()
+                with self.assertRaises(live_policy.LiveDenied):
+                    control.can_start(token, 'one')
+            self.assertEqual(control.spent, control.policy.reserve_usd)
 
 
 class WorkflowTests(NoNetwork):
@@ -384,7 +409,7 @@ class WorkflowTests(NoNetwork):
 
 
 class InterfaceTests(NoNetwork):
-    def test_restricted_entrypoint_navigation_login_and_arm_make_no_requests(self):
+    def test_restricted_entrypoint_navigation_and_login_make_no_requests(self):
         from leakprobe.ui import data_access
         with tempfile.TemporaryDirectory() as folder, patch.object(live_policy, 'server_settings', return_value=self.values), \
              patch.object(live_policy, '_authority', self.control), \
@@ -399,10 +424,8 @@ class InterfaceTests(NoNetwork):
             next(b for b in app.button if b.label == 'Sign in for live investigations').click().run(timeout=120)
             self.assertFalse(app.exception)
             token, session = app.session_state[live_access.TOKEN], app.session_state[live_access.SESSION]
-            permit = admin['sign_challenge'](self.control.challenge(), SIGNING_KEY)
-            next(w for w in app.text_area if w.label == 'Signed activation permit').set_value(json.dumps(permit))
-            next(b for b in app.button if b.label == 'Apply spending authorization').click().run(timeout=120)
-            self.assertFalse(app.exception)
+            self.assertFalse(any('permit' in w.label.lower() for w in app.text_area))
+            self.assertFalse(any('authorization' in b.label.lower() for b in app.button))
             self.assertFalse(next(b for b in app.button if b.label == 'Run AI Investigation').disabled)
             app.selectbox(key='monitoring_record_id').set_value('case_402').run(timeout=120)
             self.assertFalse(app.exception)
@@ -430,6 +453,52 @@ class InterfaceTests(NoNetwork):
                 self.assertFalse(app.exception)
                 self.assertTrue(any('cited facts checked' in row.value for row in app.success))
                 self.assertEqual(failed.call_count, 1)
+
+    def test_default_allowance_disables_run_after_one_attempt_and_keeps_saved_reports(self):
+        from leakprobe.ui import data_access
+        self.values['LEAKPROBE_LIVE_MAX_INVESTIGATIONS'] = '1'
+        self.values['LEAKPROBE_LIVE_BUDGET_USD'] = '.25'
+        self.control = live_policy.Authority(live_policy.Policy.from_settings(self.values), self.clock)
+        with tempfile.TemporaryDirectory() as folder, patch.object(live_policy, 'server_settings', return_value=self.values), \
+             patch.object(live_policy, '_authority', self.control), patch('tempfile.tempdir', folder), \
+             patch.object(data_access, 'OUTPUTS', Path(folder)), patch.object(ai_service, 'OUTPUTS', Path(folder)), \
+             patch.object(ai_service, 'provider_client', return_value=Fake({}, failure=True)) as factory:
+            app = AppTest.from_file(str(ROOT / 'deploy/live/app.py')).run(timeout=120)
+            next(w for w in app.text_input if w.label == 'Operator access code').set_value('wrong-code-long-enough')
+            next(b for b in app.button if b.label == 'Sign in for live investigations').click().run(timeout=120)
+            self.assertFalse(app.exception)
+            self.assertTrue(next(b for b in app.button if b.label == 'Run AI Investigation').disabled)
+            factory.assert_not_called()
+            next(w for w in app.text_input if w.label == 'Operator access code').set_value(PASSWORD)
+            next(b for b in app.button if b.label == 'Sign in for live investigations').click().run(timeout=120)
+            self.assertFalse(next(b for b in app.button if b.label == 'Run AI Investigation').disabled)
+            next(b for b in app.button if b.label == 'Run AI Investigation').click().run(timeout=120)
+            self.assertFalse(app.exception)
+            app.run(timeout=120)
+            self.assertTrue(next(b for b in app.button if b.label == 'Run AI Investigation').disabled)
+            self.assertTrue(any('allowance is exhausted' in str(row.value) for row in app.info))
+            self.assertTrue(any('cited facts checked' in row.value for row in app.success))
+            app.selectbox(key='monitoring_record_id').set_value('case_005').run(timeout=120)
+            self.assertFalse(app.exception)
+            self.assertTrue(next(b for b in app.button if b.label == 'Run AI Investigation').disabled)
+            self.assertEqual(factory.call_count, 1)
+
+    def test_incomplete_configuration_keeps_monitoring_and_validated_reports_accessible(self):
+        from leakprobe.ui import data_access
+        values = {'LEAKPROBE_LIVE_MODE': 'restricted', 'NEBIUS_API_KEY': 'not-a-real-key'}
+        with tempfile.TemporaryDirectory() as folder, patch.object(live_policy, 'server_settings', return_value=values), \
+             patch.object(live_policy, '_authority', None), patch('tempfile.tempdir', folder), \
+             patch.object(data_access, 'OUTPUTS', Path(folder)), \
+             patch.object(ai_service, 'provider_client', side_effect=AssertionError('No inference')) as factory:
+            app = AppTest.from_file(str(ROOT / 'deploy/live/app.py')).run(timeout=120)
+            self.assertFalse(app.exception)
+            self.assertEqual(len(app.selectbox(key='monitoring_record_id').options), 500)
+            self.assertEqual([tab.label for tab in app.tabs],
+                             ['Overview', 'AI Investigation', 'Sensor Analysis', 'Employee Review'])
+            self.assertTrue(next(b for b in app.button if b.label == 'Run AI Investigation').disabled)
+            self.assertTrue(any('cited facts checked' in row.value for row in app.success))
+            self.assertTrue(any('LEAKPROBE_OPERATOR_PASSWORD_HASH' in str(row.value) for row in app.caption))
+            factory.assert_not_called()
 
 
 if __name__ == '__main__':
