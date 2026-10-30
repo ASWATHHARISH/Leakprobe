@@ -86,10 +86,29 @@ def build_alert(snapshot):
 
 def matching_investigation(runs, alert, observations=None):
     """Do not attach another window's explanation, including same-ID changed feeds."""
-    for run in runs:
+    # Keep a saved validated report accessible when a newer attempt is incomplete.
+    preferred = sorted(runs, key=lambda run: not (
+        run.get("status") == "completed" and run.get("validation_version") == "cited-facts-v1"
+        and run.get("validation", {}).get("valid") and isinstance(run.get("report"), dict)))
+    for run in preferred:
         if run.get("case_id") != alert["case_id"]:
             continue
         if run.get("alert_id") == alert["alert_id"]:
+            expected = alert.get("comparison_signature", [])
+            comparisons = [step["result"] for step in run.get("trace", [])
+                           if step.get("tool") == "compare_hypotheses" and isinstance(step.get("result"), dict)]
+            if expected and comparisons:
+                prior = comparisons[-1].get("ranking", [])
+                names = [row.get("scenario", f"leak_pipe:{row['pipe']}" if row.get("pipe") else "normal")
+                         for row in prior]
+                scores = [row.get("normalized_rmse", row.get("fit", {}).get("value", np.inf)) for row in prior]
+                # Compact tools expose only top candidates plus normal, with original ranks.
+                by_scenario = {row["scenario"]: (i, row["score"]) for i, row in enumerate(expected, 1)}
+                if not prior or any(name not in by_scenario or
+                        not np.isclose(score, by_scenario[name][1], rtol=1e-12, atol=1e-10) or
+                        row.get("rank", by_scenario[name][0]) != by_scenario[name][0]
+                        for name, score, row in zip(names, scores, prior)):
+                    continue
             return run
         if run.get("alert_id"):
             continue  # Modern trace from another comparison must not fall back to legacy matching.

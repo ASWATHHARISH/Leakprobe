@@ -1,0 +1,7 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {"name": "LeakProbe local demo", "type": "debugpy", "request": "launch", "program": "${workspaceFolder}/run_demo.py", "console": "integratedTerminal", "cwd": "${workspaceFolder}"},
+    {"name": "LeakProbe live Nebius agent (API charges)", "type": "debugpy", "request": "launch", "program": "${workspaceFolder}/agent.py", "console": "integratedTerminal", "cwd": "${workspaceFolder}"}
+  ]
+}

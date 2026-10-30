@@ -9,7 +9,6 @@ import streamlit as st
 from leakprobe.net3_tools import Net3Investigation
 from leakprobe.paths import DATA, NET3_DATA, OUTPUTS
 from leakprobe.ui.operations import validate_feed
-from leakprobe.ui.runtime_settings import saved_trace_directories
 
 MONITORING_CASE_ID = "case_405"  # Configured archived showcase; a real saved investigation exists.
 
@@ -24,7 +23,7 @@ def load_case_index(data_dir: str = str(NET3_DATA)) -> list[dict]:
     return read_json(str(Path(data_dir) / "cases.json"))
 
 
-@st.cache_data(show_spinner=False, max_entries=6)
+@st.cache_data(show_spinner=False)
 def load_monitoring_snapshot(case_id: str = MONITORING_CASE_ID) -> dict:
     """Load the configured feed, normal references, and automatic assessment."""
     session = Net3Investigation(case_id)
@@ -166,7 +165,7 @@ def load_benchmark_case_history(benchmark_name: str) -> pd.DataFrame:
     ]].rename(columns={"case_id": "Case"}).sort_values("Case").reset_index(drop=True)
 
 
-@st.cache_data(show_spinner=False, max_entries=16)
+@st.cache_data(show_spinner=False)
 def _read_json_at_mtime(path: str, modified_ns: int) -> dict:
     """Cache a JSON artifact by path and modification time."""
     return json.loads(Path(path).read_text(encoding="utf-8"))
@@ -175,11 +174,7 @@ def _read_json_at_mtime(path: str, modified_ns: int) -> dict:
 def load_llm_trace_history() -> list[dict]:
     """Read saved full-channel LLM runs, newest first, without caching the directory scan."""
     saved_runs = []
-    paths = {}
-    for directory in saved_trace_directories(OUTPUTS):
-        for path in directory.glob("net3_full_high_signal_*_llm_trace.json"):
-            paths.setdefault(path.name, path)
-    for path in paths.values():
+    for path in (OUTPUTS / "traces").glob("net3_full_high_signal_*_llm_trace.json"):
         modified_ns = path.stat().st_mtime_ns
         try:
             run = _read_json_at_mtime(str(path), modified_ns)

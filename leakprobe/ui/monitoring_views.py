@@ -1,11 +1,9 @@
 """Presentation for the Monitoring record workspace; no inference or storage changes."""
 import pandas as pd
 import streamlit as st
-from leakprobe.ui.layout import STRETCH
 
 from leakprobe.ui.alert_queue import ASSESSMENTS, record_name
 from leakprobe.ui.monitoring import _baseline_series, _network_map_spec
-from leakprobe.ui.charts import baseline_chart_spec
 
 
 def render_workspace_header(selected, alert, quality, store, on_acknowledge):
@@ -45,7 +43,6 @@ def workspace_map_spec(layout, candidate):
     """Keep real topology and the existing single pan/zoom binding."""
     spec = _network_map_spec(layout, candidate)
     spec["height"] = 420
-    spec["background"] = "#ffffff"
     spec["layer"][0]["mark"].update(color="#a6b4be", strokeWidth=1.5)
     spec["layer"][-1]["mark"].update(color="#bd541d", strokeWidth=7)
     return spec
@@ -55,7 +52,7 @@ def render_overview(snapshot, alert, layout, rows, counts):
     left, right = st.columns([1.65, 1], gap="medium")
     with left:
         st.subheader("Network schematic")
-        st.vega_lite_chart(None, workspace_map_spec(layout, alert["candidate_pipe"]), **STRETCH)
+        st.vega_lite_chart(None, workspace_map_spec(layout, alert["candidate_pipe"]), use_container_width=True)
         st.caption("Orange: leading candidate · teal circles: junctions · dark squares: reservoirs · gray: pipes · dashed: pumps. Hover for IDs; pan and zoom to inspect.")
     with right:
         st.subheader("Current assessment")
@@ -85,7 +82,7 @@ def render_overview(snapshot, alert, layout, rows, counts):
         st.dataframe(pd.DataFrame([{"Rank": ranking.index(row) + 1,
                                     "Candidate": row["scenario"].replace("leak_pipe:", "Pipe "),
                                     "Fit error · lower is closer": row["normalized_rmse"]}
-                                   for row in visible]), hide_index=True, **STRETCH)
+                                   for row in visible]), hide_index=True, use_container_width=True)
 
 
 def latest_sensor_values(snapshot, rows):
@@ -111,17 +108,17 @@ def render_sensors(snapshot, quality, rows):
     left, right = st.columns(2)
     with left:
         st.markdown("**Pressure · meters of head**")
-        st.vega_lite_chart(None, baseline_chart_spec(pressure, "Pressure head (m)"), **STRETCH)
+        st.line_chart(pressure, height=235)
     with right:
         st.markdown("**Flow magnitude · L/s**")
-        st.vega_lite_chart(None, baseline_chart_spec(flow, "Flow magnitude (L/s)"), **STRETCH)
+        st.line_chart(flow, height=235)
     st.caption("Charts show network medians across channels by elapsed hour. Flow magnitude is absolute; the signed measurements below preserve pipe orientation.")
     st.markdown("**Affected sensor readings**")
     if rows:
         values = latest_sensor_values(snapshot, rows)
-        st.dataframe(pd.DataFrame(values[:12]), hide_index=True, **STRETCH)
+        st.dataframe(pd.DataFrame(values[:12]), hide_index=True, use_container_width=True)
         with st.expander(f"All affected sensors · {len(values)}"):
-            st.dataframe(pd.DataFrame(values), hide_index=True, **STRETCH)
+            st.dataframe(pd.DataFrame(values), hide_index=True, use_container_width=True)
     else:
         st.info("No sensor readings are outside the time-aligned normal reference ranges.")
     st.caption("Latest values and 5–95% reference ranges use the final aligned sample. Departure counts span the full window.")
@@ -137,7 +134,7 @@ def render_sensors(snapshot, quality, rows):
         st.write("No readings in the last two samples: " + ", ".join(quality["stale_channels"]))
     with st.expander("Detailed measurements · all 209 channels"):
         st.caption("Original time-aligned observations, including signed flows and missing values.")
-        st.dataframe(snapshot["observations"], hide_index=True, **STRETCH)
+        st.dataframe(snapshot["observations"], hide_index=True, use_container_width=True)
         st.download_button("Download measurements", snapshot["observations"].to_csv(index=False),
                            file_name=f"{snapshot['case_id']}_measurements.csv", mime="text/csv")
     with st.expander("Technical feed diagnostics"):
@@ -157,4 +154,4 @@ def render_prior_alerts(alert, store):
                                 "Assessment": ASSESSMENTS.get(prior["prediction"], prior["prediction"]),
                                 "Candidate": prior.get("candidate_pipe"), "Review": latest.get("status", "New"),
                                 "Updated (UTC)": latest.get("at", "—")})
-            st.dataframe(pd.DataFrame(history), hide_index=True, **STRETCH)
+            st.dataframe(pd.DataFrame(history), hide_index=True, use_container_width=True)

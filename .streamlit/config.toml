@@ -5,10 +5,3 @@ backgroundColor = "#F6F9FA"
 secondaryBackgroundColor = "#E8F0F2"
 textColor = "#19323C"
 font = "sans serif"
-
-[browser]
-gatherUsageStats = false
-
-[client]
-showErrorDetails = false
-toolbarMode = "minimal"

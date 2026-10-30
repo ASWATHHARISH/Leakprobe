@@ -1,7 +1,6 @@
 """After-action view of the held-out monitoring outcomes."""
 import pandas as pd
 import streamlit as st
-from leakprobe.ui.layout import STRETCH
 
 from leakprobe.ui.branding import render_product_header
 from leakprobe.ui.data_access import load_outcome_records
@@ -41,7 +40,7 @@ def render_reference_outcomes() -> None:
     st.dataframe(
         outcomes,
         hide_index=True,
-        **STRETCH,
+        use_container_width=True,
         column_config={
             "Window": st.column_config.TextColumn(
                 help="Identifier of the monitoring window that was assessed."
@@ -65,15 +64,11 @@ def render_reference_outcomes() -> None:
 
 def render_outcome_review():
     from leakprobe.ui.alert_store import AlertStore
-    from leakprobe.ui.alert_queue import record_name
-    from leakprobe.ui.runtime_settings import demo_mode
     import sqlite3
 
     render_product_header()
     st.header("Alert history & employee reviews")
     st.caption("Employee assessments, verification notes and timestamped investigation history.")
-    if demo_mode():
-        st.caption("Showing reviews from this demo session only. A new session or app restart resets them.")
     try:
         store = AlertStore()
         alerts = store.alerts()
@@ -88,12 +83,8 @@ def render_outcome_review():
                          "Detector": alert["prediction"], "Candidate": alert["candidate_pipe"],
                          "Review status": latest.get("status", "New"),
                          "Reviewer": latest.get("reviewer", "—"), "Updated UTC": latest.get("at", "—")})
-        st.dataframe(pd.DataFrame(rows), hide_index=True, **STRETCH)
-        by_id = {a["alert_id"]: a for a in alerts}
-        chosen = st.selectbox("Open alert history", list(by_id),
-                              format_func=lambda ident: f"{record_name(by_id[ident]['case_id'])} · "
-                              + {"leak": "Suspected leak", "normal": "No alert", "uncertain": "Review required"}.get(
-                                  by_id[ident]['prediction'], by_id[ident]['prediction']))
-        st.dataframe(pd.DataFrame(store.events(chosen)), hide_index=True, **STRETCH)
+        st.dataframe(pd.DataFrame(rows), hide_index=True, use_container_width=True)
+        chosen = st.selectbox("Open alert history", [a["alert_id"] for a in alerts])
+        st.dataframe(pd.DataFrame(store.events(chosen)), hide_index=True, use_container_width=True)
     except (OSError, sqlite3.Error):
         st.error("Local review storage is unavailable. Configure a writable persistent disk.")

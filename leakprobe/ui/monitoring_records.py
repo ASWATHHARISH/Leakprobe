@@ -3,7 +3,6 @@ import math
 
 import pandas as pd
 import streamlit as st
-from leakprobe.ui.layout import STRETCH
 
 from leakprobe.ui.alert_queue import ASSESSMENTS
 
@@ -71,15 +70,11 @@ def render_monitoring_records(queue, store, default_case_id):
     identifiers = list(by_id)
     default = default_case_id if default_case_id in by_id else identifiers[0]
     remembered = st.session_state.get("monitoring_selected_record", default)
-    options = tuple(identifiers)
-    if (st.session_state.get("monitoring_record_options") != options
-            or st.session_state.get("monitoring_record_id") not in by_id):
-        st.session_state["monitoring_record_id"] = remembered if remembered in by_id else default
-        st.session_state["monitoring_record_options"] = options
+    default = remembered if remembered in by_id else default
+    if st.session_state.get("monitoring_record_id") not in by_id:
+        st.session_state.pop("monitoring_record_id", None)
     selected = st.selectbox("Open monitoring record", identifiers,
-                            # A changing default index changes widget identity in Streamlit 1.37.
-                            # Restore state above only when the option list changes; keep this fixed.
-                            index=0, key="monitoring_record_id",
+                            index=identifiers.index(default), key="monitoring_record_id",
                             format_func=lambda ident: f"{by_id[ident]['record']} · {ASSESSMENTS[by_id[ident]['prediction']]}"
                             + (f" · Pipe {by_id[ident]['candidate_pipe']}" if by_id[ident]["candidate_pipe"] else ""),
                             help="Search or type in this list to open any matching record. Table pagination does not limit this list.")
@@ -100,7 +95,7 @@ def render_monitoring_records(queue, store, default_case_id):
             "Candidate pipe": row["candidate_pipe"] or "—",
             "Review": statuses.get(row["alert_id"], "New") if row["prediction"] in ("leak", "uncertain") else "Not required",
             "Last reading (UTC)": row["latest"] or "Unavailable",
-        } for row in rows]), height=245, hide_index=True, **STRETCH)
+        } for row in rows]), height=245, hide_index=True, use_container_width=True)
     row = by_id[selected]
     if row["prediction"] == "unavailable":
         st.warning(f"{row['record']}: {row['error']}")

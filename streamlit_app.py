@@ -20,7 +20,7 @@ st.set_page_config(
 st.sidebar.title("LeakProbe")
 st.sidebar.caption("AI-Assisted Water Leak Monitoring & Investigation")
 st.sidebar.caption("Employee monitoring desk")
-st.sidebar.caption("92 pressure + 117 flow channels")
+st.sidebar.info("Full network coverage · 92 pressure + 117 flow channels")
 st.sidebar.caption("Automatic assessment · employee verification")
 
 page = st.navigation(

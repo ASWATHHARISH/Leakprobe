@@ -2,60 +2,52 @@
 import importlib.util
 import json
 import os
-import sqlite3
 import tempfile
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
+
+import streamlit as st
 
 from leakprobe.agent import investigate
 from leakprobe.employee_investigator import SYSTEM, usage_summary
 from leakprobe.investigation_evidence import InvestigationEvidence
 from leakprobe.investigation_report import audit_legacy_report, parse_legacy_sections, validate_report
 from leakprobe.net3_tools import Net3Investigation
-from leakprobe.paths import OUTPUTS, ROOT
+from leakprobe.paths import OUTPUTS
 from leakprobe.ui.operations import build_alert, validate_feed
-from leakprobe.ui.live_policy import LiveDenied, authority
-from leakprobe.ui.protected_client import ProtectedClient, provider
 
 EMPLOYEE_INSTRUCTIONS = SYSTEM
-INSPECTION_MODE_ENV = "LEAKPROBE_INSPECTION_MODE"
-INFERENCE_DISABLED_MESSAGE = (
-    "New AI investigations are disabled in this inspection session. "
-    "Saved reports, sensor analysis and employee review remain available.")
 
 
-class InferenceUnavailableError(RuntimeError):
-    """A local policy prohibits provider execution; this is not a model failure."""
-
-
-def inference_disabled():
-    return os.getenv(INSPECTION_MODE_ENV, "").strip().lower() in ("1", "true", "yes")
-
-
-def availability(authorization=None, browser_session=None):
-    if inference_disabled():
-        return False, INFERENCE_DISABLED_MESSAGE
+def provider_settings():
+    """Read server-side Cloud Secrets without exporting credentials to the environment."""
     try:
-        control = authority()
-        control.can_start(authorization, browser_session)
-    except LiveDenied as exc:
-        return False, str(exc)
+        key = str(st.secrets.get("NEBIUS_API_KEY", "")).strip()
+        base = str(st.secrets.get("NEBIUS_BASE_URL", "https://api.tokenfactory.us-central1.nebius.com/v1/"))
+        model = str(st.secrets.get("NEBIUS_MODEL", "nvidia/nemotron-3-super-120b-a12b"))
+    except FileNotFoundError:
+        key, base, model = "", "https://api.tokenfactory.us-central1.nebius.com/v1/", "nvidia/nemotron-3-super-120b-a12b"
+    return key, base, model
+
+
+def availability():
+    key, base, model = provider_settings()
+    if not key or key == "replace_with_your_key":
+        return False, "Unavailable: configure NEBIUS_API_KEY in Streamlit Cloud Secrets. Monitoring and saved reports work offline."
+    if not base.startswith("https://") or not model.strip():
+        return False, "Unavailable: check the HTTPS endpoint and model in Cloud Secrets."
     if importlib.util.find_spec("openai") is None:
-        return False, "Unavailable: deploy the restricted live entrypoint with its live runtime requirements."
-    return True, "Live Nemotron is ready on request. Operator login and server AI usage limits apply."
+        return False, "Unavailable: install requirements-llm.txt to enable the optional provider adapter."
+    return True, "Ready on request. This sends this demo window to Nebius and can incur API charges."
 
 
-def provider_client(lease=None):
-    if inference_disabled():
-        raise InferenceUnavailableError(INFERENCE_DISABLED_MESSAGE)
-    try:
-        control = authority()
-        if lease is None or control.active is not lease:
-            raise LiveDenied("A current server-side investigation authorization is required.")
-        return provider(control, lease)
-    except LiveDenied as exc:
-        raise InferenceUnavailableError(str(exc)) from None
+def provider_client():
+    from openai import OpenAI
+    key, base, _ = provider_settings()
+    if not base.startswith("https://"):
+        raise ValueError("An HTTPS provider endpoint is required.")
+    return OpenAI(api_key=key, base_url=base, timeout=30, max_retries=0)
 
 
 def save_trace(result, output):
@@ -76,31 +68,23 @@ def save_trace(result, output):
     return path
 
 
-def run_investigation(alert, store, client_factory=None, output=None, authorization=None, browser_session=None):
+def run_investigation(alert, store, client_factory=None, output=None):
     """Only call from an employee's explicit button action. Failures never retry."""
-    # Enforce inspection policy even for direct calls or an injected client factory.
-    # No attempt is reserved, trace written or provider constructed for a blocked action.
-    if inference_disabled():
-        return {"status": "unavailable", "answer": "", "error": INFERENCE_DISABLED_MESSAGE,
-                "request_count": 0, "trace": []}
-    # Both direct calls and injected test clients must pass the same server authority.
-    # The offline entrypoint never obtains this authority, even with a key/live flag.
+    if client_factory is None:
+        ready, reason = availability()
+        if not ready:
+            return {"status": "unavailable", "answer": "", "error": reason}
+    session = Net3Investigation(alert["case_id"])
+    validate_feed(session.observations, session.metadata, session.hypotheses["normal"])
+    current = build_alert({"case_id": session.case_id, "observations": session.observations,
+                           "comparison": session.compare_hypotheses()})
+    if current["alert_id"] != alert["alert_id"]:
+        raise ValueError("Feed or reference comparison changed. Refresh the alert before starting AI.")
+    request_id = store.reserve_ai(alert["alert_id"])
+    _, _, model = provider_settings()
+    result = None
     try:
-        control = authority()
-        lease = control.begin(authorization, browser_session, alert.get("alert_id"))
-    except LiveDenied as exc:
-        return {"status": "unavailable", "answer": "", "error": str(exc), "request_count": 0, "trace": []}
-    model = control.policy.model
-    result, client, request_id = None, None, None
-    try:
-        session = Net3Investigation(alert["case_id"])
-        validate_feed(session.observations, session.metadata, session.hypotheses["normal"])
-        current = build_alert({"case_id": session.case_id, "observations": session.observations,
-                               "comparison": session.compare_hypotheses()})
-        if current["alert_id"] != alert["alert_id"]:
-            raise ValueError("Feed comparison changed; refresh before investigating.")
-        request_id = store.reserve_ai(alert["alert_id"])
-        client = ProtectedClient(control, lease, client_factory() if client_factory else provider_client(lease))
+        client = (client_factory or provider_client)()
         result = investigate(client, model, max_rounds=4, max_tool_calls=8,
                              case_id=alert["case_id"], instructions=EMPLOYEE_INSTRUCTIONS, compact=True)
         if result.get("status") == "completed":
@@ -124,43 +108,17 @@ def run_investigation(alert, store, client_factory=None, output=None, authorizat
         if isinstance(result, dict):
             result.update(status="failed", error="Investigation post-processing failed; recorded usage and evidence are retained. No automatic retry.")
         else:
-            result = {"status": "failed", "answer": "", "trace": [], "usage": [], "request_count": lease['requests'],
+            result = {"status": "failed", "answer": "", "trace": [], "usage": [], "request_count": 0,
                       "error": "Provider request failed. Check host credentials, quota and model access. No automatic retry."}
-    finally:
-        try:
-            if client is not None:
-                client.close()
-        except Exception:
-            pass  # Never expose provider cleanup exception text.
-        control.end(lease)
-    if lease['stop'] and result.get('status') != 'completed':
-        result['error'] = lease['stop']
-    if control.poisoned:
-        result.update(status='incomplete', error=lease['stop'] or 'Live usage verification failed. Requests locked.')
     result.update(case_id=alert["case_id"], alert_id=alert["alert_id"],
                   feed_fingerprint=alert["feed_fingerprint"], model=model,
                   saved_at_utc=datetime.now(timezone.utc).isoformat())
-    result['origin'] = 'live_nebius'
-    result['live_budget'] = control.audit(lease)
-    result['tool_loop_attempt_count'] = result.get('request_count', 0)
-    result['request_count'] = lease['requests']
-    for index, receipt in enumerate(result.get('requests', [])):
-        if index >= lease['requests']:
-            receipt['status'] = 'blocked_before_provider_call'
     result.setdefault("budget", {"max_requests": 4, "max_tool_calls": 8, "max_output_tokens_per_request": 2048})
     result["usage_summary"] = usage_summary(result)
-    if request_id is None:
-        return {**result, 'status': 'failed', 'error': 'Investigation could not start. No automatic retry.'}
     try:
-        target = Path(output) if output is not None else OUTPUTS / 'restricted_live' / 'traces'
-        if target.resolve().is_relative_to((ROOT / 'demo_assets').resolve()):
-            raise ValueError('Historical saved reports are read-only.')
-        path = save_trace(result, target)
-        store.finish_ai(alert["alert_id"], request_id, result["status"], path.name)
-    except (OSError, ValueError, sqlite3.Error):
-        try:
-            store.finish_ai(alert["alert_id"], request_id, "storage_failed")
-        except (OSError, ValueError, sqlite3.Error):
-            pass
+        path = save_trace(result, output or OUTPUTS / "traces")
+    except OSError:
+        store.finish_ai(alert["alert_id"], request_id, "storage_failed")
         return {**result, "status": "storage_failed", "error": "Investigation could not be saved. No automatic retry."}
+    store.finish_ai(alert["alert_id"], request_id, result["status"], path.name)
     return {**result, "trace_file": path.name}

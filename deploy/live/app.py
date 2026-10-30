@@ -1,8 +1,5 @@
-"""Explicit restricted-live entrypoint; configuration alone never initiates inference."""
-from pathlib import Path
+"""Keep the existing private Cloud app's entry-point path, without activation modes."""
 import runpy
+from pathlib import Path
 
-root = Path(__file__).resolve().parents[2]
-bootstrap = runpy.run_path(str(root / 'deploy/app.py'))
-bootstrap['configure_demo'](profile='restricted_live')
-runpy.run_path(str(root / 'streamlit_app.py'), run_name='__main__')
+runpy.run_path(str(Path(__file__).resolve().parents[1] / "app.py"), run_name="__main__")

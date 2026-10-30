@@ -2,15 +2,10 @@
 import pandas as pd
 import sqlite3
 import streamlit as st
-from leakprobe.ui.layout import STRETCH
 
-from leakprobe.ui.ai_service import (availability, run_investigation, inference_disabled,
-                                     INFERENCE_DISABLED_MESSAGE)
-from leakprobe.ui.investigation_history import is_validated_report, select_investigations
+from leakprobe.ui.ai_service import availability, run_investigation
 from leakprobe.ui.alert_store import AlertStore, STATUSES
-from leakprobe.ui.runtime_settings import demo_mode
-from leakprobe.ui.live_access import render_access
-from leakprobe.ui.hosting_data import load_monitoring_queue
+from leakprobe.ui.alert_queue import load_monitoring_queue
 from leakprobe.ui.monitoring_records import render_monitoring_records
 from leakprobe.ui.branding import render_product_header
 from leakprobe.ui.data_access import (MONITORING_CASE_ID, load_monitoring_snapshot, load_network_layout,
@@ -18,7 +13,7 @@ from leakprobe.ui.data_access import (MONITORING_CASE_ID, load_monitoring_snapsh
 from leakprobe.ui.monitoring import _reference_deviations
 from leakprobe.ui.monitoring_views import (render_workspace_header, render_overview,
                                           render_sensors, render_prior_alerts)
-from leakprobe.ui.operations import build_alert, validate_feed
+from leakprobe.ui.operations import build_alert, matching_investigation, validate_feed
 from leakprobe.employee_investigator import usage_summary
 from leakprobe.investigation_report import ACTIONS, EXPLANATIONS, LIMITATIONS, audit_legacy_report, parse_legacy_sections
 
@@ -40,8 +35,6 @@ def _save_review(alert_id, store, prefix, acknowledge=False):
 
 def render_review(alert, store):
     st.subheader("Employee review")
-    if demo_mode():
-        st.caption("Reviews are kept for this demo session. They are not permanent operational records.")
     st.caption("Acknowledgment records receipt. Only a separate field review can confirm or rule out a leak. Automated assessments stay unchanged.")
     events = store.events(alert["alert_id"])
     reviews = [e for e in events if e["kind"] == "review"]
@@ -63,7 +56,7 @@ def render_review(alert, store):
         st.dataframe(pd.DataFrame([{"Time (UTC)": e["at"], "Event": e["kind"].replace("_", " ").title(),
                                     "Status": e.get("status", "Assessment recorded"),
                                     "Reviewer": e.get("reviewer", "—"), "Notes": e.get("notes", "")}
-                                   for e in events]), **STRETCH, hide_index=True)
+                                   for e in events]), use_container_width=True, hide_index=True)
     with st.expander("Technical audit details"):
         st.json(events)
 
@@ -71,45 +64,17 @@ def render_review(alert, store):
 def render_ai(alert, store, observations=None):
     st.subheader("AI Investigation · NVIDIA Nemotron")
     st.caption("Nemotron interprets sensor evidence. The physics detector generates the assessment independently.")
-    authorization, browser_session = render_access() if not inference_disabled() else (None, None)
-    ready, reason = availability(authorization, browser_session) if authorization else availability()
-    ready = ready and not inference_disabled()
-    st.caption(INFERENCE_DISABLED_MESSAGE if inference_disabled() else
-               "Available on request" if ready else "AI investigation is currently unavailable. Saved reports can still be reviewed.")
-    saved = select_investigations(load_llm_trace_history(), alert, observations)
-    latest, validated = saved["latest"], saved["validated"]
-    fresh_run_id = None
+    ready, reason = availability()
+    st.caption("Available on request" if ready else "AI investigation is currently unavailable. Saved reports can still be reviewed.")
+    run = matching_investigation(load_llm_trace_history(), alert, observations)
     # Existing successful same-window traces are useful offline. No static explanation is substituted.
-    if st.button("Run AI Investigation", disabled=not ready or store is None, type="primary") and ready and store is not None:
+    if st.button("Run AI Investigation", disabled=not ready or store is None, type="primary"):
         with st.spinner("Nemotron is investigating the sensor evidence…"):
             try:
-                access = {'authorization': authorization, 'browser_session': browser_session} if authorization else {}
-                latest = run_investigation(alert, store, **access)
-                if isinstance(latest, dict):
-                    fresh_run_id = latest.get('live_budget', {}).get('run_id')
-                if not isinstance(latest, dict):
-                    latest = {"status": "failed", "error": "No investigation report was returned. No automatic retry."}
-                if is_validated_report(latest):
-                    validated = latest
-            except Exception:
-                # An adapter or local policy can fail before the service returns a result.
-                # Exception text may contain request details. Keep the workspace and saved report usable.
-                latest = {"status": "unavailable" if inference_disabled() else "failed",
-                          "error": INFERENCE_DISABLED_MESSAGE if inference_disabled() else
-                          "AI investigation could not start. Saved reports remain available. No automatic retry."}
+                run = run_investigation(alert, store)
+            except (ValueError, OSError, sqlite3.Error) as exc:
+                st.error(str(exc))
     st.caption("Runs only when requested. API charges may apply; saved investigations remain available without another request.")
-    if latest is not None and latest is not validated and validated is not None:
-        status = str(latest.get("status", "incomplete")).replace("_", " ")
-        st.warning(f"Latest attempt: {status} · {latest.get('saved_at_utc') or 'Not saved'}. The latest validated report is shown below.")
-        with st.expander("Latest attempt · unvalidated details"):
-            if latest.get("error"):
-                st.write(latest["error"])
-            st.caption("This attempt is separate from the validated report. Its raw response is not a validated conclusion.")
-            if latest.get("answer"):
-                st.markdown(latest["answer"])
-            st.json({"validation": latest.get("validation", {}), "usage": usage_summary(latest),
-                     "requests": latest.get("requests", []), "trace": latest.get("trace", [])})
-    run = validated or latest
     if not run:
         st.info("No investigation report is available for this record yet.")
         with st.expander("Technical tool trace"):
@@ -117,11 +82,8 @@ def render_ai(alert, store, observations=None):
             st.caption("On request only: up to 4 model requests, 8 tool calls and 2 attempts per alert. Context is bounded; no automatic retries.")
         return
     status = run.get("status", "incomplete")
-    checked = is_validated_report(run)
-    origin = ('Newly generated live Nemotron investigation' if fresh_run_id and fresh_run_id == run.get('live_budget', {}).get('run_id')
-              else 'Saved live Nemotron investigation' if run.get('origin') == 'live_nebius'
-              else 'Previously saved Nemotron report')
-    st.caption(f"{origin} · {'Latest validated investigation' if checked else 'Unvalidated attempt'} · {run.get('saved_at_utc') or 'Not saved'}")
+    checked = (status == "completed" and run.get("validation_version") == "cited-facts-v1"
+               and run.get("validation", {}).get("valid") and isinstance(run.get("report"), dict))
     if checked:
         report = run["report"]
         st.success("Completed · cited facts checked against tool evidence")
@@ -134,12 +96,12 @@ def render_ai(alert, store, observations=None):
         st.dataframe(pd.DataFrame([{"Sensor": row["channel"], "Observed value": row["value"], "Unit": row["unit"],
                                     "Sign": row["sign"], "Context": facts.get(row["fact_id"], {}).get("timestamp_utc",
                                                 facts.get(row["fact_id"], {}).get("statistic", "Cited tool fact"))}
-                                   for row in report["evidence"]]), hide_index=True, **STRETCH)
+                                   for row in report["evidence"]]), hide_index=True, use_container_width=True)
         st.caption("Flow signs follow model pipe orientation; they do not establish leak outflow or physical direction on their own.")
         st.markdown("**Alternatives to consider**")
         st.dataframe(pd.DataFrame([{"Candidate": f"Pipe {row['pipe']}" if row["pipe"] else "Normal operation",
                                     "Rank": row["rank"], "Fit error": row["fit_score"]}
-                                   for row in report["alternatives"]]), hide_index=True, **STRETCH)
+                                   for row in report["alternatives"]]), hide_index=True, use_container_width=True)
         st.write(" ".join(EXPLANATIONS[key] for key in report["possible_explanations"]))
         st.markdown("**Uncertainty**")
         st.write(" ".join(LIMITATIONS[key] for key in report["uncertainty"]))
@@ -182,8 +144,6 @@ def render_ai(alert, store, observations=None):
             st.write(f"{index}. {step.get('tool', 'unknown')}")
             st.json(step)
         st.json({"usage": run.get("usage", []), "budget": run.get("budget", {})})
-        if run.get('live_budget'):
-            st.json({'live_spending_reservation': run['live_budget']})
         if observations is not None:
             st.download_button("Download full sensor readings", observations.to_csv(index=False),
                                file_name=f"{alert['case_id']}_sensor_readings.csv", mime="text/csv")

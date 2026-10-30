@@ -1,0 +1,3 @@
+# Optional JavaScript chart-runtime regression checks, in addition to the base tests.
+-r requirements.txt
+vl-convert-python==1.8.0

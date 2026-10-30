@@ -3,12 +3,8 @@ import json
 
 import pandas as pd
 import streamlit as st
-from leakprobe.ui.layout import STRETCH
 
 from leakprobe.ui.branding import render_product_header
-from leakprobe.ui.charts import rate_chart_spec
-from leakprobe.ui.investigation_history import saved_comparison, is_validated_report
-from leakprobe.employee_investigator import usage_summary
 from leakprobe.ui.data_access import (
     load_benchmark_case_history,
     load_llm_trace_history,
@@ -17,7 +13,27 @@ from leakprobe.ui.data_access import (
 
 
 def _run_comparison(saved_run: dict) -> dict | None:
-    return saved_comparison(saved_run)
+    comparisons = [
+        row["result"] for row in saved_run.get("trace", [])
+        if row.get("tool") == "compare_hypotheses"
+        and isinstance(row.get("result"), dict)
+        and row["result"].get("ranking")
+    ]
+    if not comparisons:
+        return None
+    comparison = comparisons[-1]
+    # Compact Nemotron traces store cited fits; legacy traces store detector rows.
+    # Adapt presentation only, without changing either saved schema or rankings.
+    ranking = []
+    for row in comparison["ranking"]:
+        if "scenario" in row:
+            ranking.append(row)
+        else:
+            pipe = row.get("pipe")
+            ranking.append({**row, "scenario": f"leak_pipe:{pipe}" if pipe else "normal",
+                            "leak_pipe": pipe, "normalized_rmse": row["fit"]["value"]})
+    return {**comparison, "ranking": ranking,
+            "score_meaning": comparison.get("score_meaning", "Fit errors are not probabilities; lower is closer.")}
 
 
 def _render_benchmark_case_history() -> None:
@@ -58,7 +74,7 @@ def _render_benchmark_case_history() -> None:
     st.dataframe(
         history,
         hide_index=True,
-        **STRETCH,
+        use_container_width=True,
         height=520,
         column_config={
             "Case": st.column_config.TextColumn(
@@ -116,23 +132,26 @@ def render_llm_run_history() -> None:
         comparison = _run_comparison(run)
         ranking = comparison["ranking"] if comparison else []
         winner = ranking[0] if ranking else {}
-        totals = usage_summary(run)
+        token_count = sum(
+            row.get("total_tokens", 0)
+            for row in run.get("usage", [])
+            if isinstance(row, dict)
+        )
         history_rows.append({
             "Saved at (UTC)": run["saved_at_utc"],
             "Case": run.get("case_id") or "—",
             "Status": run.get("status", "unknown").title(),
             "Leading fit": winner.get("scenario", "—").replace("leak_pipe:", "Pipe "),
             "Best fit error": winner.get("normalized_rmse"),
-            "Evidence validation": "Validated" if is_validated_report(run) else "Not validated",
-            "LLM requests": totals["requests"],
-            "Reported tokens": totals["total_tokens"],
+            "LLM requests": len(run.get("usage", [])),
+            "Reported tokens": token_count,
         })
     st.subheader(
         "Run history",
         help="A list of saved investigations, their case, outcome status, leading pattern, and run usage.",
     )
     st.dataframe(
-        pd.DataFrame(history_rows), hide_index=True, **STRETCH,
+        pd.DataFrame(history_rows), hide_index=True, use_container_width=True,
         column_config={
             "Saved at (UTC)": st.column_config.TextColumn(
                 help="Time when this investigation was saved, shown in Coordinated Universal Time."
@@ -162,7 +181,6 @@ def render_llm_run_history() -> None:
     selected_index = st.selectbox(
         "Open a saved run",
         options=list(range(len(saved_runs))),
-        index=next((i for i, run in enumerate(saved_runs) if is_validated_report(run)), 0),
         format_func=lambda index: (
             f"{saved_runs[index].get('case_id') or 'Unknown case'} · "
             f"{saved_runs[index]['saved_at_utc']} · "
@@ -175,13 +193,9 @@ def render_llm_run_history() -> None:
     status = saved_run.get("status", "unknown")
     if status != "completed":
         st.warning(f"The saved run status is **{status}**; review its result as incomplete.")
-    elif not is_validated_report(saved_run):
-        st.warning("Saved response completed · not fully evidence-validated. Review as an unvalidated interpretation.")
-    else:
-        st.success("Completed · cited facts checked against tool evidence")
     tool_history = saved_run.get("trace", [])
-    totals = usage_summary(saved_run)
-    total_tokens = totals["total_tokens"]
+    usage = saved_run.get("usage", [])
+    total_tokens = sum(row.get("total_tokens", 0) for row in usage if isinstance(row, dict))
     summary = st.columns(4)
     summary[0].metric(
         "Case",
@@ -195,7 +209,7 @@ def render_llm_run_history() -> None:
     )
     summary[2].metric(
         "LLM requests",
-        totals["requests"],
+        len(usage),
         help=(
             "Number of calls to the language-model provider. This does not count the separate "
             "analysis-tool steps or expose the model's private internal reasoning."
@@ -208,7 +222,7 @@ def render_llm_run_history() -> None:
     )
 
     comparison = _run_comparison(saved_run)
-    if comparison and comparison["ranking"]:
+    if comparison:
         st.subheader(
             "Full-channel comparison",
             help=(
@@ -217,12 +231,12 @@ def render_llm_run_history() -> None:
             ),
         )
         rows = [
-            {"Rank": row["rank"], "Scenario": row["scenario"], "Pipe": row["leak_pipe"] or "—",
+            {"Rank": row.get("rank", index), "Scenario": row["scenario"], "Pipe": row["leak_pipe"] or "—",
              "Normalized fit score": row["normalized_rmse"]}
-            for row in comparison["ranking"]
+            for index, row in enumerate(comparison["ranking"], start=1)
         ]
         st.dataframe(
-            pd.DataFrame(rows), hide_index=True, **STRETCH,
+            pd.DataFrame(rows), hide_index=True, use_container_width=True,
             column_config={
                 "Rank": st.column_config.NumberColumn(
                     help="Position in the list, ordered from the closest fit upward."
@@ -240,8 +254,6 @@ def render_llm_run_history() -> None:
             },
         )
         st.caption(comparison["score_meaning"])
-    if comparison and comparison["skipped_rows"]:
-        st.warning("Some saved comparison rows could not be read. Original tool data remains available below.")
 
     answer = saved_run.get("answer")
     if answer:
@@ -249,14 +261,7 @@ def render_llm_run_history() -> None:
             "LLM interpretation",
             help="A saved plain-language summary produced for this run. It explains tool results but does not change the detector's comparison.",
         )
-        if is_validated_report(saved_run):
-            st.write(saved_run["report"]["summary"])
-            with st.expander("Full validated investigation"):
-                st.markdown(answer)
-        else:
-            st.caption("This response is not a validated conclusion. Its original contents are preserved below.")
-            with st.expander("Original response · unvalidated", expanded=False):
-                st.markdown(answer)
+        st.markdown(answer)
     else:
         st.info("The saved run has no final written interpretation.")
 
@@ -270,7 +275,7 @@ def render_llm_run_history() -> None:
         st.dataframe(
             pd.DataFrame(history),
             hide_index=True,
-            **STRETCH,
+            use_container_width=True,
             column_config={
                 "Step": st.column_config.TextColumn(
                     help="Name of the analysis tool called at this step."
@@ -278,8 +283,6 @@ def render_llm_run_history() -> None:
             },
         )
         st.caption(f"Trace file: `{saved_run['trace_file']}`")
-        st.json({"trace": tool_history, "validation": saved_run.get("validation", {}),
-                 "usage_summary": totals})
 
     _render_benchmark_case_history()
 
@@ -337,7 +340,7 @@ def render_benchmarks() -> None:
                 "leaks in this test set. Higher precision means fewer false alarms."
             ),
         )
-        st.vega_lite_chart(None, rate_chart_spec(scores, "Leak precision"), **STRETCH)
+        st.bar_chart(scores.set_index("Variant")[["Leak precision"]], y_label="Rate")
     with recall_col:
         st.subheader(
             "Leak recall",
@@ -346,7 +349,7 @@ def render_benchmarks() -> None:
                 "Higher recall means fewer missed leaks."
             ),
         )
-        st.vega_lite_chart(None, rate_chart_spec(scores, "Leak recall"), **STRETCH)
+        st.bar_chart(scores.set_index("Variant")[["Leak recall"]], y_label="Rate")
     st.subheader(
         "Held-out test results",
         help=(
@@ -355,7 +358,7 @@ def render_benchmarks() -> None:
         ),
     )
     st.dataframe(
-        scores, hide_index=True, **STRETCH,
+        scores, hide_index=True, use_container_width=True,
         column_config={
             "Variant": st.column_config.TextColumn(
                 help="Training approach used for this version of the leak classifier."
@@ -406,7 +409,7 @@ def render_benchmarks() -> None:
                 "Balanced accuracy": score["balanced_accuracy"],
             })
         st.dataframe(
-            pd.DataFrame(development_rows), hide_index=True, **STRETCH,
+            pd.DataFrame(development_rows), hide_index=True, use_container_width=True,
             column_config={
                 "Variant": st.column_config.TextColumn(
                     help="Training approach used for this version of the leak classifier."
@@ -449,7 +452,7 @@ def render_benchmarks() -> None:
             st.dataframe(
                 pd.DataFrame(in_sample_rows),
                 hide_index=True,
-                **STRETCH,
+                use_container_width=True,
                 column_config={
                     "Variant": st.column_config.TextColumn(
                         help="Training approach used for this version of the leak classifier."

@@ -6,7 +6,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from leakprobe.paths import OUTPUTS
-from leakprobe.ui.runtime_settings import review_database
 
 DEFAULT_PATH = OUTPUTS / "operations" / "alerts.sqlite3"
 STATUSES = ("Acknowledged", "Under review", "Leak confirmed", "No leak",
@@ -14,8 +13,8 @@ STATUSES = ("Acknowledged", "Under review", "Leak confirmed", "No leak",
 
 
 class AlertStore:
-    def __init__(self, path=None):
-        self.path = Path(path) if path is not None else review_database()
+    def __init__(self, path=DEFAULT_PATH):
+        self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.connect() as db:
             db.execute("CREATE TABLE IF NOT EXISTS alerts (id TEXT PRIMARY KEY, payload TEXT NOT NULL)")

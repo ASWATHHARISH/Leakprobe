@@ -2,8 +2,6 @@
 import numpy as np
 import pandas as pd
 import streamlit as st
-from leakprobe.ui.layout import STRETCH
-from leakprobe.ui.charts import baseline_chart_spec
 
 from leakprobe.ui.branding import render_product_header
 from leakprobe.ui.data_access import (
@@ -110,7 +108,6 @@ def _network_map_spec(layout: dict, candidate_pipe: str | None) -> dict:
         "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
         "width": "container",
         "height": 460,
-        "background": "#ffffff",
         "autosize": {"type": "fit", "contains": "padding"},
         "config": {"view": {"stroke": None}, "axis": {"grid": False}},
         "layer": [
@@ -277,7 +274,7 @@ def render_evaluation_replay() -> None:
             "in red; pressure sensor junctions, other pipes, and pumps are shown for context."
         ),
     )
-    st.vega_lite_chart(None, _network_map_spec(layout, candidate_pipe), **STRETCH)
+    st.vega_lite_chart(None, _network_map_spec(layout, candidate_pipe), use_container_width=True)
     if candidate_pipe:
         st.caption(
             f"Candidate pipe {candidate_pipe} is red. Blue circles are pressure junctions; "
@@ -313,7 +310,7 @@ def render_evaluation_replay() -> None:
                 "The normal reference is the median of the stored normal profiles."
             ),
         )
-        st.vega_lite_chart(None, baseline_chart_spec(pressure_chart, "Pressure head (m)"), **STRETCH)
+        st.line_chart(pressure_chart, height=245, y_label="Pressure head (m)")
     with right:
         st.subheader(
             "Median absolute pipe flow · L/s",
@@ -322,7 +319,7 @@ def render_evaluation_replay() -> None:
                 "The normal reference is the median of the stored normal profiles."
             ),
         )
-        st.vega_lite_chart(None, baseline_chart_spec(flow_chart, "Flow magnitude (L/s)"), **STRETCH)
+        st.line_chart(flow_chart, height=245, y_label="Flow (L/s)")
     st.caption(
         "The normal reference is the median of 24 stored normal-operation profiles. The charts summarize the network; the alert comparison uses all 92 pressure and 117 flow channels.",
         help=(
@@ -397,7 +394,7 @@ def render_evaluation_replay() -> None:
             st.dataframe(
                 pd.DataFrame(deviation_rows[:10]),
                 hide_index=True,
-                **STRETCH,
+                use_container_width=True,
                 column_config={
                     "Sensor group": st.column_config.TextColumn(
                         help="Whether this is a pressure sensor or a pipe-flow sensor."
@@ -441,7 +438,7 @@ def render_evaluation_replay() -> None:
             st.dataframe(
                 pd.DataFrame(details),
                 hide_index=True,
-                **STRETCH,
+                use_container_width=True,
                 column_config={
                     "Rank": st.column_config.NumberColumn(
                         help="Position in the ordered list, from the lowest error upward."

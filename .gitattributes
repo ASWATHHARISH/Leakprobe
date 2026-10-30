@@ -1,2 +1,2 @@
-# Preserve the exact verified reference, observation and source bytes on every OS.
+# Keep published bytes stable: the original queue binds to file hashes.
 * -text

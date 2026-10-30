@@ -1,0 +1,11 @@
+# Python 3.11 or 3.12. Tested on Python 3.12.
+wntr==1.3.2
+setuptools==80.9.0
+numpy==1.26.4
+pandas==2.2.3
+jsonschema==4.26.0
+streamlit==1.66.0
+pyarrow==17.0.0
+# Optional Net3 SMOTE classifier benchmark: pip install scikit-learn imbalanced-learn
+scikit-learn==1.7.2
+imbalanced-learn==0.14.0
