@@ -9,6 +9,7 @@ from leakprobe.ui.ai_service import (availability, run_investigation, inference_
 from leakprobe.ui.investigation_history import is_validated_report, select_investigations
 from leakprobe.ui.alert_store import AlertStore, STATUSES
 from leakprobe.ui.runtime_settings import demo_mode
+from leakprobe.ui.live_access import render_access
 from leakprobe.ui.hosting_data import load_monitoring_queue
 from leakprobe.ui.monitoring_records import render_monitoring_records
 from leakprobe.ui.branding import render_product_header
@@ -70,17 +71,22 @@ def render_review(alert, store):
 def render_ai(alert, store, observations=None):
     st.subheader("AI Investigation · NVIDIA Nemotron")
     st.caption("Nemotron interprets sensor evidence. The physics detector generates the assessment independently.")
-    ready, reason = availability()
+    authorization, browser_session = render_access() if not inference_disabled() else (None, None)
+    ready, reason = availability(authorization, browser_session) if authorization else availability()
     ready = ready and not inference_disabled()
     st.caption(INFERENCE_DISABLED_MESSAGE if inference_disabled() else
                "Available on request" if ready else "AI investigation is currently unavailable. Saved reports can still be reviewed.")
     saved = select_investigations(load_llm_trace_history(), alert, observations)
     latest, validated = saved["latest"], saved["validated"]
+    fresh_run_id = None
     # Existing successful same-window traces are useful offline. No static explanation is substituted.
     if st.button("Run AI Investigation", disabled=not ready or store is None, type="primary") and ready and store is not None:
         with st.spinner("Nemotron is investigating the sensor evidence…"):
             try:
-                latest = run_investigation(alert, store)
+                access = {'authorization': authorization, 'browser_session': browser_session} if authorization else {}
+                latest = run_investigation(alert, store, **access)
+                if isinstance(latest, dict):
+                    fresh_run_id = latest.get('live_budget', {}).get('run_id')
                 if not isinstance(latest, dict):
                     latest = {"status": "failed", "error": "No investigation report was returned. No automatic retry."}
                 if is_validated_report(latest):
@@ -112,7 +118,10 @@ def render_ai(alert, store, observations=None):
         return
     status = run.get("status", "incomplete")
     checked = is_validated_report(run)
-    st.caption(f"{'Latest validated investigation' if checked else 'Saved investigation attempt'} · {run.get('saved_at_utc') or 'Not saved'}")
+    origin = ('Newly generated live Nemotron investigation' if fresh_run_id and fresh_run_id == run.get('live_budget', {}).get('run_id')
+              else 'Saved live Nemotron investigation' if run.get('origin') == 'live_nebius'
+              else 'Previously saved Nemotron report')
+    st.caption(f"{origin} · {'Latest validated investigation' if checked else 'Unvalidated attempt'} · {run.get('saved_at_utc') or 'Not saved'}")
     if checked:
         report = run["report"]
         st.success("Completed · cited facts checked against tool evidence")
@@ -173,6 +182,8 @@ def render_ai(alert, store, observations=None):
             st.write(f"{index}. {step.get('tool', 'unknown')}")
             st.json(step)
         st.json({"usage": run.get("usage", []), "budget": run.get("budget", {})})
+        if run.get('live_budget'):
+            st.json({'live_spending_reservation': run['live_budget']})
         if observations is not None:
             st.download_button("Download full sensor readings", observations.to_csv(index=False),
                                file_name=f"{alert['case_id']}_sensor_readings.csv", mime="text/csv")

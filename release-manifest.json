@@ -16,8 +16,8 @@
       "sha256": "bcee09e8f4ff0b1585298ac65a3843b3f89f1e4296fb8f526a83a5ee85f23ac2"
     },
     ".gitignore": {
-      "bytes": 109,
-      "sha256": "487fc807e46a75aa5d1a54733bb3304762c717fcb9f657ac79c56d4c74e311ca"
+      "bytes": 175,
+      "sha256": "5373987f4164f5006c85df731eae132d7e8f141f5b22b8df4040db626aac4838"
     },
     ".python-version": {
       "bytes": 5,
@@ -26,6 +26,10 @@
     ".streamlit/config.toml": {
       "bytes": 264,
       "sha256": "2ba2d41b0e244b216ee165f5338ee6cf2d19d7ece03602e34fb8480394f2176b"
+    },
+    "README.md": {
+      "bytes": 4766,
+      "sha256": "02bf21daf733923f1fa2b75937c72a2475ab69e1ffa4e1a604a9f0e63d648e8e"
     },
     "data/net3_full_high_signal/case_000_observations.csv": {
       "bytes": 99210,
@@ -2116,8 +2120,28 @@
       "sha256": "e54c151fe3f85a8455167758922ed027ab69942af717c505347dc9bf75c16f96"
     },
     "deploy/app.py": {
-      "bytes": 668,
-      "sha256": "769b2a1f7505634a1eb7778b0d83a58b08c52ba883f71a51092653d3ad05446c"
+      "bytes": 852,
+      "sha256": "404f18017589a3369cc2a3db92db098f75eb2436eef46f4cdd523609cfdd0333"
+    },
+    "deploy/live/app.py": {
+      "bytes": 351,
+      "sha256": "4365ffdfae1b1548471e8960aad3b710778f89c039d8d8c9ebe4f1bf64a50b7c"
+    },
+    "deploy/live/requirements.txt": {
+      "bytes": 28,
+      "sha256": "481d68f4bc6aa02f9c54f41c86c9f2b68295ff326c89a71a48b2613d3006b806"
+    },
+    "deploy/live/secrets.example.toml": {
+      "bytes": 579,
+      "sha256": "78d3ce2eb25c7e9ffeeb9e796b59759ac398d58e76da4b6eaebc9f50125422e5"
+    },
+    "deploy/live_admin.py": {
+      "bytes": 1795,
+      "sha256": "8facdd095d6a1c1fbf5ab03ff4394f4a996df77e46d7c7012d232a762bd8ab1f"
+    },
+    "deploy/requirements-live.txt": {
+      "bytes": 35,
+      "sha256": "99a02f68810e4790309b33dac644efa3e4bf9ca9aa3caaba3fc287d31176979f"
     },
     "deploy/requirements.txt": {
       "bytes": 214,
@@ -2128,12 +2152,16 @@
       "sha256": "8dc129540b7279e54de279cad9208e582630de13deb6dd626932a088424b86c1"
     },
     "deploy/verify_release.py": {
-      "bytes": 4802,
-      "sha256": "3ad3ba1dc3849a9e45c021214efba2f45209b2cc3682ebdd20b5d4df7aff8fd4"
+      "bytes": 5090,
+      "sha256": "05b5337080c8daec3ef70daf8cc62defd10e8eca0857b6ec0ad57dbfc780a4e8"
     },
     "docs/DEPLOYMENT.md": {
       "bytes": 4423,
       "sha256": "9215932e12ea02bcef6a70fa15f6464d6f669bc2eade16c5a07e37470b8b3f6f"
+    },
+    "docs/PROTECTED_LIVE_INFERENCE.md": {
+      "bytes": 11122,
+      "sha256": "8441f742708a621476bf3851b62e02fb89a250c921de9fbfedb3371bdc0603bf"
     },
     "docs/STREAMLIT_FRONTEND_README.md": {
       "bytes": 6005,
@@ -2180,8 +2208,8 @@
       "sha256": "dae494aa9a7f95ef56273622e174c4a25a3779f1121081d6761b75737ce7ef26"
     },
     "leakprobe/ui/ai_service.py": {
-      "bytes": 7736,
-      "sha256": "6d06c44f4484dd174e7fe34ba9a3646be36a559cfb724c94015e4c96428ea142"
+      "bytes": 8829,
+      "sha256": "f0ec445c61d24769d744c3e23286184345eccf408fb6a9da85f2869d46a889c5"
     },
     "leakprobe/ui/alert_queue.py": {
       "bytes": 7094,
@@ -2204,8 +2232,8 @@
       "sha256": "c4051867574ab07b288b796b0413648af5d1484f907f28c1b8773de9406a1ee7"
     },
     "leakprobe/ui/employee_dashboard.py": {
-      "bytes": 15908,
-      "sha256": "70bc9b898951db57fab04f85a8ecec6123cace0b4ea10b7c639b9f413cd5983d"
+      "bytes": 16808,
+      "sha256": "b110a6f36a4637ae6cf57bef16fe24a6198bbbf1990eb708d36935a03138c370"
     },
     "leakprobe/ui/hosting_data.py": {
       "bytes": 2472,
@@ -2218,6 +2246,14 @@
     "leakprobe/ui/layout.py": {
       "bytes": 387,
       "sha256": "3bf4a41e126e275f4304ecbde98f451d2e109085203ee946ec5cbb1bde146b0a"
+    },
+    "leakprobe/ui/live_access.py": {
+      "bytes": 3220,
+      "sha256": "f6a4cbdf145b5a1b0b9e08ac2b1177b6bce8f18c024d69786d34a36ba2f5debb"
+    },
+    "leakprobe/ui/live_policy.py": {
+      "bytes": 12706,
+      "sha256": "8d02b6aff2a8de2e7ef310a456a1ae47b9990655de43150704f56042e65eb33f"
     },
     "leakprobe/ui/monitoring.py": {
       "bytes": 21826,
@@ -2243,20 +2279,24 @@
       "bytes": 24493,
       "sha256": "f5278937662832ea958fcabe78b9fbf0b1d8e8e88972491627a13eb53ad13903"
     },
-    "leakprobe/ui/runtime_settings.py": {
-      "bytes": 1332,
-      "sha256": "f7e50bac6caa7998f1340f9bdd7bbf1414552330127eb70ebd23f42549cd9945"
+    "leakprobe/ui/protected_client.py": {
+      "bytes": 4558,
+      "sha256": "cbe9fecd379f8151f199d3897ddb94da26f06d6447939973ae16740251dfa70d"
     },
-    "README.md": {
-      "bytes": 4423,
-      "sha256": "9215932e12ea02bcef6a70fa15f6464d6f669bc2eade16c5a07e37470b8b3f6f"
+    "leakprobe/ui/runtime_settings.py": {
+      "bytes": 1487,
+      "sha256": "27c0b5a65dd2dde719bb18559ee216f3ff9fd17a8243797f2ad07d055ec6fe08"
     },
     "streamlit_app.py": {
       "bytes": 1667,
       "sha256": "eb9f7a732bdbe26a7796ff4fe2f8e3cf9be7bf6ad93214f1ff2d37efff048b35"
+    },
+    "tests/test_live_inference.py": {
+      "bytes": 26146,
+      "sha256": "e8f3c8ed8cbf5914d208ccaa53fd2b163c305400844667e14869de42aefc41cf"
     }
   },
-  "total_bytes": 80851707,
+  "total_bytes": 80915276,
   "license_present": false,
   "target": "streamlit-community-cloud",
   "source_manifest_sha256": "8dc129540b7279e54de279cad9208e582630de13deb6dd626932a088424b86c1",
@@ -2278,5 +2318,9 @@
   "deployment_authorization": "not_authorized",
   "public_visibility_authorization": "not_authorized",
   "license_selected": false,
-  "publication_performed_at_preparation": false
+  "publication_performed_at_preparation": false,
+  "default_entrypoint": "deploy/app.py",
+  "restricted_entrypoint": "deploy/live/app.py",
+  "live_activation_performed": false,
+  "integration": "restricted_live_v1"
 }

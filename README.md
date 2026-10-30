@@ -42,7 +42,11 @@ patterns without generating data, scoring cases or calling providers.
 
 `deploy/app.py` defaults to `LEAKPROBE_DEMO_MODE=1` and
 `LEAKPROBE_ENABLE_LIVE_AI=0`. Public-demo mode blocks inference even if a live flag
-is supplied. Do not add API credentials or enable paid inference for this package.
+is supplied. The offline entrypoint does not accept paid inference. A separate
+restricted entrypoint is included; see [protected live inference](docs/PROTECTED_LIVE_INFERENCE.md).
+Activation, Cloud Secrets changes and deployment require separate approval. The
+initial live configuration permits one investigation, reserves at most $0.25 for
+that attempt and caps the activation budget at $1.00. Nothing activates on push.
 All five saved investigations remain unchanged, including validated LP-0405 and
 separate invalid/incomplete attempts. Historical model reports do not represent
 new inference. The 500 cached records retain 417 predicted leaks, 83 predicted

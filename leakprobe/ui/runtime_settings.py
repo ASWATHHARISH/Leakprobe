@@ -37,4 +37,7 @@ def saved_trace_directories(output_directory=OUTPUTS):
     paths = [Path(output_directory) / 'traces']
     if os.getenv('LEAKPROBE_SAVED_TRACES'):
         paths.append(Path(os.environ['LEAKPROBE_SAVED_TRACES']))
+    from leakprobe.ui.live_access import can_read_live
+    if can_read_live():
+        paths.append(Path(output_directory) / 'restricted_live' / 'traces')
     return list(dict.fromkeys(paths))

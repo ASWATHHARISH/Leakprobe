@@ -9,3 +9,8 @@ __pycache__/
 *.sqlite
 *.db
 outputs/
+secrets.toml
+*.pem
+*.key
+*live-permit*.json
+*live-challenge*.json
