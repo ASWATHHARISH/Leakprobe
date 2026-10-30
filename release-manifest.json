@@ -4,7 +4,10 @@
   "source_commit": "dffddc1fa8177d8170f8c8ffa4c8b43a85fbf748",
   "changed_original_files": [
     ".gitignore",
+    ".vscode/launch.json",
     "README.md",
+    "leakprobe/agent.py",
+    "leakprobe/run_demo.py",
     "leakprobe/ui/ai_service.py",
     "leakprobe/ui/operations.py",
     "leakprobe/ui/pages.py"
@@ -26,6 +29,7 @@
     "licenses/WNTR-1.3.2-LICENSE.md",
     "outputs/operations/monitoring_queue_4f5eee35f6139d9772dbeb0fa6f89876e0c566d19950caa66d2c069729600baf.json",
     "outputs/operations/monitoring_queue_5d39112cad469f0bd0edaa4298b4810f6c071f4c2f930b7971143a9d6b62cd34.json",
+    "tests/test_cli_safety.py",
     "tests/test_cloud_recovery.py"
   ],
   "files": {
@@ -42,8 +46,8 @@
       "bytes": 162
     },
     ".vscode/launch.json": {
-      "sha256": "9a1757a6384c860ea2fb26a9aef72a9a4520b2f0f96495ceff93d360059f622a",
-      "bytes": 446
+      "sha256": "8c73f6e21c9da5ff37cfb74eca2098fa73a62c88e2cccf42424d289e0a6550db",
+      "bytes": 470
     },
     "LICENSE": {
       "sha256": "53a389e13f3a5086eaf65eb5d369c7b65185594d05adb853789a6f30235a0034",
@@ -6266,8 +6270,8 @@
       "bytes": 72
     },
     "leakprobe/agent.py": {
-      "sha256": "e666b9075190ad7c2c720a257efa030990ec16431e77b2f75374bf35896b4101",
-      "bytes": 5303
+      "sha256": "facd65cd0cd1d70d7b86c23b7bcf467bba76c47dd2980ca0922d93cf61737a88",
+      "bytes": 5395
     },
     "leakprobe/coverage.py": {
       "sha256": "22f693a5c6611e34d790f9d1f517ce317a710d3f4a4de52162629c31b0bed24a",
@@ -6314,8 +6318,8 @@
       "bytes": 283
     },
     "leakprobe/run_demo.py": {
-      "sha256": "13cc49561cc068a3a7b813e374ae70f3a0aeec4bf3f8b34a6b29454a01a6dfe6",
-      "bytes": 2677
+      "sha256": "f7c76e9f5221e45d313baed07b37bb4b628bd410e14bfed1b61c1d8cb3f51d79",
+      "bytes": 2949
     },
     "leakprobe/smote_benchmark.py": {
       "sha256": "06dc97a1d44c33ce1f9369f8164c356eba86c3940982f83c5e51206c94ae6cc6",
@@ -6461,6 +6465,10 @@
       "sha256": "429983b662cb4837e858905ac63aa8d8ea0cdbb0741fceb59296ae832dda0a10",
       "bytes": 3127
     },
+    "tests/test_cli_safety.py": {
+      "sha256": "801e11688d12bcdf20d1ce11b9260dc071f0ba311c0b089c2acdce7af930670b",
+      "bytes": 7710
+    },
     "tests/test_cloud_recovery.py": {
       "sha256": "bb13834985b87fb3f536784f1b74460cb505ef4dd6907326c7d708ff6de29ec3",
       "bytes": 6357
@@ -6521,5 +6529,21 @@
       "docs/SUBMISSION_READINESS.md",
       "licenses/WNTR-1.3.2-LICENSE.md"
     ]
+  },
+  "cli_safety_fix": {
+    "base_release_commit": "2852591d8c74aaab2e56e498a4c037d36294a616",
+    "date": "2026-10-30",
+    "changed_cli_files": [
+      ".vscode/launch.json",
+      "leakprobe/agent.py",
+      "leakprobe/run_demo.py"
+    ],
+    "added_tests": [
+      "tests/test_cli_safety.py"
+    ],
+    "default_demo_mode": "scripted",
+    "explicit_live_demo_flag": "--live",
+    "trace_storage": "UUID filenames with exclusive creation; collisions refuse overwrite",
+    "streamlit_workflow_and_investigation_engine_unchanged": true
   }
 }

@@ -1,6 +1,7 @@
-"""Run a full-channel Net3 investigation, optionally without an LLM call."""
+"""Run offline by default; use --live to request an optional LLM investigation."""
 import argparse
 import json
+import uuid
 
 from .paths import OUTPUTS, ROOT
 
@@ -21,8 +22,10 @@ def run_scripted_demo(case_id=None):
 
     output = OUTPUTS / "traces"
     output.mkdir(parents=True, exist_ok=True)
-    path = output / f"net3_full_high_signal_{session.case_id}_scripted_trace.json"
-    path.write_text(json.dumps(trace, indent=2), encoding="utf-8")
+    path = output / f"net3_full_high_signal_{session.case_id}_{uuid.uuid4().hex}_scripted_trace.json"
+    payload = json.dumps(trace, indent=2)
+    with path.open("x", encoding="utf-8") as stream:
+        stream.write(payload)
     comparison = results["compare_hypotheses"]
     print(f"\nSCRIPTED NET3 INVESTIGATION — no LLM/API calls — {session.case_id}")
     print("Sensor feed: 92 pressure + 117 flow channels")
@@ -49,13 +52,15 @@ def run_scripted_net3(case_id=None):
 def main():
     parser = argparse.ArgumentParser(description="Investigate a complete Net3 sensor feed with LeakProbe.")
     parser.add_argument("--case", help="Net3 case id; defaults to the first held-out case.")
-    parser.add_argument("--scripted", action="store_true", help="Run offline without an LLM API call.")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--scripted", action="store_true", help="Run offline without an LLM API call (default).")
+    mode.add_argument("--live", action="store_true", help="Explicitly request live inference; API charges may apply.")
     args = parser.parse_args()
-    if args.scripted:
-        run_scripted_demo(args.case)
-    else:
+    if args.live:
         from .agent import run_live
         run_live(case_id=args.case)
+    else:
+        run_scripted_demo(args.case)
 
 
 if __name__ == "__main__":
