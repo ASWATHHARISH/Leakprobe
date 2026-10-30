@@ -4,12 +4,15 @@
   "source_commit": "dffddc1fa8177d8170f8c8ffa4c8b43a85fbf748",
   "changed_original_files": [
     ".gitignore",
+    "README.md",
     "leakprobe/ui/ai_service.py",
     "leakprobe/ui/operations.py",
     "leakprobe/ui/pages.py"
   ],
   "added_files": [
     ".gitattributes",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
     "deploy/README.md",
     "deploy/app.py",
     "deploy/live/app.py",
@@ -17,6 +20,10 @@
     "deploy/requirements.txt",
     "deploy/secrets.example.toml",
     "deploy/verify_release.py",
+    "docs/ARCHITECTURE.md",
+    "docs/SUBMISSION_FILE_INVENTORY.csv",
+    "docs/SUBMISSION_READINESS.md",
+    "licenses/WNTR-1.3.2-LICENSE.md",
     "outputs/operations/monitoring_queue_4f5eee35f6139d9772dbeb0fa6f89876e0c566d19950caa66d2c069729600baf.json",
     "outputs/operations/monitoring_queue_5d39112cad469f0bd0edaa4298b4810f6c071f4c2f930b7971143a9d6b62cd34.json",
     "tests/test_cloud_recovery.py"
@@ -27,8 +34,8 @@
       "bytes": 80
     },
     ".gitignore": {
-      "sha256": "d4c4477387bfbc7cf76b7d95dfceb224504d7f01f3910cbb35feb0eb6eb2a961",
-      "bytes": 253
+      "sha256": "0f64f9fa00b62e41989ee02b50ab1548b6050532f7dbfb29a9fc0efa60ca953d",
+      "bytes": 821
     },
     ".streamlit/config.toml": {
       "sha256": "bae351ac2fc6d0cbdab96901e20b31a6ae02cd1c85aa7caa8a4b0e082b30c6bd",
@@ -38,13 +45,21 @@
       "sha256": "9a1757a6384c860ea2fb26a9aef72a9a4520b2f0f96495ceff93d360059f622a",
       "bytes": 446
     },
+    "LICENSE": {
+      "sha256": "53a389e13f3a5086eaf65eb5d369c7b65185594d05adb853789a6f30235a0034",
+      "bytes": 1079
+    },
     "PITCH.md": {
       "sha256": "881f0964b8e7322b31663676f87060a5cf927bf9ac9105956b21d13fe9db299e",
       "bytes": 6716
     },
     "README.md": {
-      "sha256": "4e141817e56bb58ee5e69a27c56f6bc9bfaadea929defed0c712582a11913fc8",
-      "bytes": 8348
+      "sha256": "08644b716b6401f781940706dd1e2606e9ddf01f966c1fb18776e78b7e219b94",
+      "bytes": 9324
+    },
+    "THIRD_PARTY_NOTICES.md": {
+      "sha256": "4988bf77f99ec51c3c6e09e665b4170af7fea8963b92b69dbfe2e94acaa28381",
+      "bytes": 4559
     },
     "agent.py": {
       "sha256": "cd7fa4ee21837294f4fbc37339eaad78974657ea4b51c599454e803871305780",
@@ -6190,6 +6205,10 @@
       "sha256": "cd7dd119dbd8a3c6cd15eac41a2aa56eadbbd129ce37956171bb121e048dfac6",
       "bytes": 2154
     },
+    "docs/ARCHITECTURE.md": {
+      "sha256": "39758446dd049725b3747c832b267ffec73887d474fa83f5e6a76d5e6b8eda80",
+      "bytes": 5500
+    },
     "docs/EMPLOYEE_DASHBOARD.md": {
       "sha256": "4b2bce8ac19e95efe2b272226e72835063b069370508caba07ef7b99ba943916",
       "bytes": 6632
@@ -6221,6 +6240,14 @@
     "docs/STREAMLIT_FRONTEND_README.md": {
       "sha256": "4dc149f5320cc78286ac1a104f7fd24ec5a3fdf70c6ab1cd16df5aa7c9245a27",
       "bytes": 6005
+    },
+    "docs/SUBMISSION_FILE_INVENTORY.csv": {
+      "sha256": "146f80285ac36151e3aa99b7c42970f57673f85c016989f67b15186fca0e6241",
+      "bytes": 209624
+    },
+    "docs/SUBMISSION_READINESS.md": {
+      "sha256": "97c5dd85bbde4ed29e00133542a18f9fcea384faf68d507f32ad0fd2391fad1b",
+      "bytes": 10246
     },
     "evaluate_net3.py": {
       "sha256": "519dfe67bf813077b6e73f9748b9511b83319ec8a3871dbc733cffa6c1105c13",
@@ -6350,6 +6377,10 @@
       "sha256": "e3daf1f02365c6d0ecefda0a78e569141dcf0ee064aa2bb6cee6a3b2c57a85a0",
       "bytes": 24329
     },
+    "licenses/WNTR-1.3.2-LICENSE.md": {
+      "sha256": "9bd305ef62ff1c2bbbafb799e495151c66a4c3ffbc642b98df5c12ace156429e",
+      "bytes": 4788
+    },
     "outputs/evaluations/net3_full_pipes_comparison.md": {
       "sha256": "06c9c3193f68816b4f5cde00be52c0f2af47d7a57f5c176ef28762cb0f5e800f",
       "bytes": 3359
@@ -6470,5 +6501,25 @@
       "sha256": "87c51fb9b8027b5bbec25859afa22d7fb8f3707ebe61f602c3f6491e7a93759c",
       "bytes": 972
     }
+  },
+  "submission_preparation": {
+    "base_release_commit": "a0954fb0bd289e39561c35ef5e99794684c72c58",
+    "date": "2026-10-30",
+    "owner_approved_license": "MIT",
+    "owner_approved_public_redistribution": true,
+    "application_and_scientific_changes": false,
+    "changed_existing_files": [
+      ".gitignore",
+      "README.md",
+      "release-manifest.json"
+    ],
+    "added_submission_files": [
+      "LICENSE",
+      "THIRD_PARTY_NOTICES.md",
+      "docs/ARCHITECTURE.md",
+      "docs/SUBMISSION_FILE_INVENTORY.csv",
+      "docs/SUBMISSION_READINESS.md",
+      "licenses/WNTR-1.3.2-LICENSE.md"
+    ]
   }
 }

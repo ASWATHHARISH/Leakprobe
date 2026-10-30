@@ -1,124 +1,117 @@
-# LeakProbe — AI-Assisted Water Leak Detection & Investigation
+# LeakProbe
 
-Monitor network signals, investigate anomalies, identify candidate leaks, and support faster field response.
+**AI-Assisted Water Leak Monitoring & Investigation**
 
-LeakProbe is a Streamlit workbench for comparing a water-network sensor feed with normal-operation and candidate-leak patterns. The app uses the **canonical 500-case high-signal Net3 dataset**, with pressure at all 92 junctions and flow in all 117 pipes. A separate 1,000-case run is retained for a sample-size comparison; it is not an app data source.
+LeakProbe helps operators follow a suspected leak from network readings to a candidate pipe, supporting sensor evidence, a Nemotron investigation and a recorded human review. This is a product demonstration using **simulated EPA Net3 data**, not a connected utility deployment.
 
-The cases are generated from the EPA EPANET Example Network 3 model. They are useful for a controlled benchmark and do not establish performance on a utility network.
+The application includes 500 browsable records, 92 pressure and 117 flow channels, an interactive network schematic, four record-workspace tabs, employee review history and five original saved investigation traces. A matching validated report is preferred over a newer failed attempt. Not every saved trace is a successful validated report.
 
-## Start the app
+## Clone, install and run (Python 3.12)
 
-Use Python 3.12, create an environment, and install the pinned packages:
+No GPU, API key, data generation or training is needed to view the included demo. If accessing a private copy of the repository, cloning requires repository permission.
 
 ```bash
+git clone https://github.com/ASWATHHARISH/leakprobe-streamlit-demo.git
+cd leakprobe-streamlit-demo
+```
+
+Create and activate an environment:
+
+```powershell
+# Windows PowerShell
+py -3.12 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+```
+
+```bash
+# Linux / macOS
 python3.12 -m venv .venv
 source .venv/bin/activate
-python -m pip install -r requirements.txt
-streamlit run streamlit_app.py
 ```
 
-The Monitoring page automatically assesses the canonical 500 recorded sensor windows and presents a browsable alert queue. Employees filter and open generated assessments; they do not configure sensor channels or detector inputs. The selected record shows its interactive network schematic, affected sensors, observed readings versus baseline, AI investigation and review form. All 92 pressure and 117 flow channels are retained. The **demo feed** uses archived simulated Net3 observations; these independent windows are not simultaneous live incidents. Archived timestamps and incomplete readings are explicitly flagged.
-
-**AI Investigation** displays a matching saved model explanation and offers an explicit **Run AI Investigation** action using the existing Nebius/Nemotron tool loop. Opening a page never calls the provider. New runs are limited to four model requests and eight tool calls, with two attempts per alert and no automatic retries. Without credentials, monitoring, saved explanations and employee review remain available offline. Legacy traces lacking a model identifier are labeled honestly; their text is not silently rewritten.
-
-Employees can acknowledge alerts, record review status, enter notes, and record leak confirmed / no leak / further investigation required. UTC event history is stored in a local SQLite database. **History & outcomes** shows employee reviews; synthetic labels, replay controls, technical diagnostics, traces, and classifier benchmarks are under **Evaluation / Admin**. Admin is navigation separation, not an authentication boundary.
-
-See [the employee guide](docs/EMPLOYEE_DASHBOARD.md) for launch and verification commands and [the implementation audit](docs/EMPLOYEE_DASHBOARD_AUDIT.md) for scope and limitations.
-
-To run an offline investigation from the terminal:
+Then, on either platform:
 
 ```bash
-python run_demo.py --scripted
+python -m pip install -r deploy/requirements.txt
+python deploy/verify_release.py
+python -m streamlit run deploy/app.py
 ```
 
-To use the optional Nebius/Nemotron explanation, install `requirements-llm.txt`, configure `.env` from `.env.example`, and run:
+Open **http://localhost:8501**. If PowerShell blocks activation, use `.\.venv\Scripts\python.exe` instead of `python`; changing system execution policy is unnecessary. Direct runtime dependencies are pinned; this is not a complete transitive dependency lockfile.
+
+For offline viewing, leave `NEBIUS_API_KEY` unset in Streamlit Secrets, including any user-level Secrets file. Monitoring, network and sensor views, saved reports, reviews, Investigation history and Model validation work without provider requests. Loading and navigating pages do not initiate inference.
+
+### Suggested walkthrough
+
+1. In **Monitoring**, search for **LP-0405** (`case_405`) and open the record.
+2. Explore **Overview**, **AI Investigation**, **Sensor Analysis** and **Employee Review**. The AI tab can show the saved evidence-validated Nemotron report without a new API call.
+3. Open **History & outcomes** for employee actions, **Investigation history** for saved model runs and **Model validation** for frozen classifier results. Reference outcomes are separate from employee confirmations.
+
+Reviews create a local SQLite database under `outputs/operations/`; new investigations create separate trace files. These are runtime records, not files to commit. Cloud-local storage can disappear on restart; durable shared storage is future work. The release verifier intentionally rejects extra runtime files: run it on a clean checkout before starting the app, rather than deleting review history to make it pass.
+
+## Optional live NVIDIA Nemotron investigation
+
+Live inference uses **Nebius Token Factory**, not a local model, and can incur charges. Keep a keyed hosted app restricted to invited viewers through Streamlit Community Cloud. This release has no separate operator login and Python cannot verify Cloud sharing permissions. Public source does not require public access to the keyed app.
+
+For local use, copy `deploy/secrets.example.toml` to `.streamlit/secrets.toml` and replace the placeholder privately. For Community Cloud, enter the same fields in **App settings → Secrets**:
+
+```toml
+NEBIUS_API_KEY = "replace_with_your_key"
+NEBIUS_BASE_URL = "https://api.tokenfactory.us-central1.nebius.com/v1/"
+NEBIUS_MODEL = "nvidia/nemotron-3-super-120b-a12b"
+```
+
+Never commit the populated file or paste credentials into a report. The UI reads Streamlit Secrets directly; a repository `.env` is not its configuration mechanism. Both entrypoints use the same app: `deploy/app.py` does not enforce offline mode when a key is present. The existing live Cloud entrypoint remains **`deploy/live/app.py`**, branch **`main`**, Python **3.12**, with `deploy/live/requirements.txt`.
+
+Open **AI Investigation** and explicitly click **Run AI Investigation**. Nemotron retrieves compact evidence and targeted sensor readings, submits a structured employee report and checks its cited facts against tool evidence. Incomplete or invalid attempts remain separate; a failed run does not replace an older valid report.
+
+The recovered implementation retains its existing limits: four model requests, eight tool calls, 2,048 output tokens per request, 30-second SDK timeouts, zero SDK retries and two attempts per alert in the local review ledger, including failures. It prevents overlapping pending runs for the same alert. These are not a provider-side dollar cap or a global concurrency guarantee. A validation correction may use a remaining request within that investigation budget. Previous operator-login, signing-permit and process-wide activation implementations are not present in this release.
+
+## NVIDIA Nemotron and Nebius contributions
+
+- **Physics first:** deterministic reference matching produces leak/normal assessments and candidate rankings from all 209 channels. Nemotron does not replace the detector or alter its ranking.
+- **NVIDIA Nemotron:** the configured Nemotron 3 Super model selects allowlisted evidence tools, examines unusual readings and alternatives, and produces employee explanations and verification recommendations.
+- **Nebius Token Factory:** hosts model inference through its OpenAI-compatible API. Streamlit hosts the interface; Nebius is not claimed as the UI host or hydraulic simulator.
+- **Validation and human review:** local checks verify cited values, signs, units, sensors and ranking facts. Employees acknowledge alerts and record findings independently of generated labels.
+
+See [Architecture](docs/ARCHITECTURE.md) for code responsibilities and implemented versus planned capabilities. Model/API access has separate [third-party terms](THIRD_PARTY_NOTICES.md); the MIT source license does not provide API credits or model weights.
+
+## Data and evaluation boundaries
+
+| Included evidence | Scope |
+|---|---|
+| `data/net3_full_high_signal/` | Canonical 500 simulated windows: 400 development, 100 held-out; 92 pressure and 117 flow channels. |
+| `data/net3_full_high_signal_benchmark/` | Saved experimental classifier reports and predictions; the classifier is not the operational detector. |
+| `data/net3_full_high_signal_1000/` and its benchmark directory | Separate sample-size experiment, not the Monitoring feed. The 500-case split/label/pipe assignments were reused twice with fresh measurements, not independent broader pipe coverage. |
+| `outputs/evaluations/net3_full_pipes_comparison.md` | Existing physics/classifier comparison, retained unchanged. |
+| `outputs/traces/` | All five original model attempts, including invalid and legacy attempts. |
+
+The saved physics result on the **100-case high-signal held-out set** is TP/FN/FP/TN **76/4/1/19**: 95% recall, 95% specificity and exact pipe on 75/80 actual leaks. These are original synthetic-benchmark results, not new evaluations or field accuracy. The [comparison report](outputs/evaluations/net3_full_pipes_comparison.md) provides denominators, false alarms and limitations.
+
+The benchmark uses 28–35 mm leak openings lasting 4–4.5 hours and aligned demand ranges. Candidate sets are declared per split: 17 development pipes and seven held-out pipes, not all 117 observed pipes. RMSE is a fit error, **not a probability**. Earlier difficult Part C experiments are different conditions: this showcase does not overturn their negative results or demonstrate reliable detection of small, short or unmodeled leaks.
+
+Do not regenerate data, train models or overwrite saved evaluations to start the demo. Historical generation/evaluation commands may write outputs. There is no live utility connection, verified field accuracy, automatic dispatch, active sensor planning or Nemotron fine-tuning in this release.
+
+## Offline tests
+
+These checks mock provider requests and use disposable review storage:
 
 ```bash
-python run_demo.py
+python -m unittest discover -s tests -p test_cloud_recovery.py -v
+python -m unittest discover -s tests -p test_employee_dashboard.py -v
 ```
 
-The LLM receives the case observations and tool outputs. Provider requests can incur charges. ChatGPT Pro access is not an API credential.
-
-## The only supported sensor layout
-
-Every case must contain exactly:
-
-- 92 pressure columns, one for every Net3 junction.
-- 117 flow columns, one for every Net3 pipe.
-
-Missing readings may occur within those columns. The channel definitions and columns must remain complete. The app, physics-based comparator, evaluator, high-signal generator, and classifier all reject a smaller or incomplete channel set.
-
-The canonical dataset is `data/net3_full_high_signal/`. It contains 500 cases: 400 development cases (320 leaks and 80 normal) and 100 held-out cases (80 leaks and 20 normal). It also contains the per-case outcomes and a reference-pattern bank matched to its high-signal leak ranges.
-
-## Separate 1,000-case experiment
-
-`data/net3_full_high_signal_1000/` contains 800 development cases and 200 held-out cases, all with the same 92 pressure and 117 flow channels. It was generated to check how classifier scores vary with a larger sample. Case split, outcome, and leak-pipe assignments from the 500-case set were each reused twice; readings and simulation parameters were generated afresh, so this run adds measurement variation but no new pipe assignments. The app continues to use the canonical 500-case dataset.
-
-The experiment's classifier report is [`data/net3_full_high_signal_1000_benchmark/report.md`](data/net3_full_high_signal_1000_benchmark/report.md). To rerun it:
+For the full suite, add the test-only chart renderer:
 
 ```bash
-python -m leakprobe.smote_benchmark \
-  --source data/net3_full_high_signal_1000 \
-  --output data/net3_full_high_signal_1000_benchmark
+python -m pip install vl-convert-python==1.8.0
+python -m unittest discover -s tests -v
 ```
 
-## Evaluate and benchmark
+`requirements.txt`, `requirements-llm.txt` and `requirements-test.txt` retain broader development/classifier dependencies. They are unnecessary for basic viewing when using the pinned deployment runtime.
 
-Run the physics-based comparison on the held-out cases:
+## License and documentation
 
-```bash
-python evaluate_net3.py --split test
-```
+Team-owned LeakProbe code is under the root [MIT License](LICENSE). All code owners approved MIT and public redistribution on 30 October 2026. Net3 and installed third-party packages retain their own terms; see [Third-party notices](THIRD_PARTY_NOTICES.md) and the retained [WNTR notices](licenses/WNTR-1.3.2-LICENSE.md).
 
-Run the recall-led classifier benchmark. SMOTE is applied only inside the training folds, and the alert threshold is selected using out-of-fold development predictions:
-
-```bash
-python -m leakprobe.smote_benchmark
-```
-
-Results and per-case predictions are written to `data/net3_full_high_signal_benchmark/`. The test split is reserved for final reporting. Use the held-out numbers to compare precision, recall, false alarms, and missed leaks.
-
-The 500-case development split contains 320 leaks and 80 normal cases. Default SMOTE therefore generates normal-like examples to balance training; it does not add synthetic leak cases.
-
-The obsolete demo data, sparse-channel datasets, and separate standard-range archive have been removed. The canonical app data and the documented 1,000-case experiment are the retained Net3 datasets.
-
-## Regenerate the high-signal feed
-
-The generator preserves the 500 case IDs, split, and pipe assignments, then regenerates full-channel observations and a matching reference bank:
-
-```bash
-python generate_data.py
-```
-
-The benchmark intentionally uses 28–35 mm leak openings lasting 4–4.5 hours. Leak and normal demand ranges are aligned across the development and test splits. This makes the detection task easier and is useful for comparing classifier behavior, but it can overstate performance relative to smaller or shorter leaks, unmodeled operating changes, or real sensor feeds. Re-run the classifier benchmark and physics-based evaluation after regenerating the data; saved metrics do not automatically transfer.
-
-The included network file is `data/networks/Net3.inp`. Net3 has 92 junctions, 117 pipes, two pumps, and two reservoirs. WNTR uses meters, seconds, and cubic meters per second internally; saved pipe flow is in liters per second and pressure is in meters of water head.
-
-## Reading the metrics
-
-Leak is the positive class:
-
-- **Precision**: of the cases flagged as leaks, how many are labeled leaks.
-- **Recall**: of the leak cases, how many are flagged.
-- **False alarm**: a normal case flagged as a leak.
-- **Miss**: a leak case not flagged.
-
-A high-recall operating point can catch more leaks while increasing false alarms. The 80/20 held-out class balance also means an always-leak classifier would have 100% recall, 80% precision, and 0% specificity; that would not be a useful detector. Review the confusion matrix and balanced accuracy alongside precision and recall.
-
-The physics-based matcher ranks reference simulations by normalized fit error. The error is not a probability. Classifier scores and results on these generated cases are not field validation.
-
-## Project layout
-
-```text
-leakprobe/                         Python implementation
-data/net3_full_high_signal/        Canonical app dataset, 500 cases, 92/117 channels
-data/net3_full_high_signal_benchmark/ Canonical classifier reports and predictions
-data/net3_full_high_signal_1000/   Separate 800/200 sample-size experiment
-data/net3_full_high_signal_1000_benchmark/ Experiment report and predictions
-data/networks/Net3.inp             EPANET network model
-docs/                              Product and Streamlit documentation
-outputs/evaluations/               Current full-channel evaluation report
-streamlit_app.py                   Streamlit entry point
-```
-
-See [PITCH.md](PITCH.md), [the product requirements](docs/LeakProbe-PRD.md), and [the Streamlit guide](docs/STREAMLIT_FRONTEND_README.md) for product scope and hosting notes.
+The [submission checklist](docs/SUBMISSION_READINESS.md) records audit scope, verification and remaining publication steps. This README and [Architecture](docs/ARCHITECTURE.md) describe the recovered release. Older guides, PRD, pitch and task notes are retained for provenance and may describe earlier behavior or proposals; they do not override current setup or establish completed capabilities.
