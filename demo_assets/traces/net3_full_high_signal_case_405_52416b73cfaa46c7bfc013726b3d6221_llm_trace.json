@@ -1,0 +1,759 @@
+{
+  "status": "completed",
+  "answer": "## Investigation summary\nPreliminary analysis indicates an anomaly that warrants further investigation.\n## Anomalous sensor evidence\n- pressure_601_m: 92.5839 m (mean; positive; evidence sensor:pressure_601_m:mean).\n- flow_197_lps: 17.8309 L/s (mean; positive; evidence sensor:flow_197_lps:mean).\n- flow_330_lps: -0.0378839 L/s (mean; negative; evidence sensor:flow_330_lps:mean).\n## Why the leading pipe ranked highest\nPipe 202 ranks first with fit error 1.61766; lower is closer across all 209 channels.\n## Competing explanations or alternate pipes\n- Pipe 101: rank 2, fit error 2.90922.\n- Normal operation: rank 3, fit error 2.91228.\nA change in demand could also affect the readings.\nSensor bias or drift is an alternative to investigate.\nAn unrecorded operating change could affect the pattern.\n## Uncertainty and limitations\n- Fit errors are comparison measures, not leak probabilities.\n- The candidate has not been verified in the field.\n- Some sensor readings are missing.\n## Recommended employee verification actions\n- Check affected sensors for faults, calibration issues or missing readings.\n- Review recent demand, pump and valve changes with the operations team.\n- Verify the candidate location using approved field procedures before confirming a leak.",
+  "report": {
+    "summary": "Preliminary analysis indicates an anomaly that warrants further investigation.",
+    "evidence": [
+      {
+        "fact_id": "sensor:pressure_601_m:mean",
+        "value": 92.58390514638582,
+        "unit": "m",
+        "channel": "pressure_601_m",
+        "sign": "positive"
+      },
+      {
+        "fact_id": "sensor:flow_197_lps:mean",
+        "value": 17.83091414740647,
+        "unit": "L/s",
+        "channel": "flow_197_lps",
+        "sign": "positive"
+      },
+      {
+        "fact_id": "sensor:flow_330_lps:mean",
+        "value": -0.03788392081632998,
+        "unit": "L/s",
+        "channel": "flow_330_lps",
+        "sign": "negative"
+      }
+    ],
+    "leading_candidate": {
+      "pipe": "202",
+      "rank": 1,
+      "fit_score": 1.6176571976232652,
+      "fact_id": "fit:leak_pipe:202"
+    },
+    "alternatives": [
+      {
+        "pipe": "101",
+        "rank": 2,
+        "fit_score": 2.9092220340446495,
+        "fact_id": "fit:leak_pipe:101"
+      },
+      {
+        "pipe": null,
+        "rank": 3,
+        "fit_score": 2.912277943084965,
+        "fact_id": "fit:normal"
+      }
+    ],
+    "possible_explanations": [
+      "demand_change",
+      "sensor_error",
+      "operating_state"
+    ],
+    "uncertainty": [
+      "fit_not_probability",
+      "not_field_verified",
+      "missing_readings"
+    ],
+    "actions": [
+      "check_sensor_health",
+      "review_operating_changes",
+      "verify_candidate_in_field"
+    ]
+  },
+  "validation": {
+    "valid": true,
+    "errors": [],
+    "scope": "Schema, exposed values, identifiers, units, signs and ranks checked. Causes remain hypotheses; no field verification."
+  },
+  "validation_version": "cited-facts-v1",
+  "trace": [
+    {
+      "tool": "get_observations",
+      "arguments": {},
+      "result": {
+        "case_id": "case_405",
+        "pressure_channels": 92,
+        "flow_channels": 117,
+        "time_points": 25,
+        "missing_readings": 57,
+        "shortlist_basis": "Largest standardized departures from time-aligned median normal profiles; supporting cues, not proven leak effects.",
+        "evidence": {
+          "sensors": [
+            {
+              "channel": "pressure_601_m",
+              "unit": "m",
+              "available": 24,
+              "missing": 1,
+              "facts": [
+                {
+                  "fact_id": "sensor:pressure_601_m:min",
+                  "value": 92.09775989506863,
+                  "unit": "m",
+                  "channel": "pressure_601_m",
+                  "sign": "positive",
+                  "statistic": "min"
+                },
+                {
+                  "fact_id": "sensor:pressure_601_m:max",
+                  "value": 93.18818444702792,
+                  "unit": "m",
+                  "channel": "pressure_601_m",
+                  "sign": "positive",
+                  "statistic": "max"
+                },
+                {
+                  "fact_id": "sensor:pressure_601_m:mean",
+                  "value": 92.58390514638582,
+                  "unit": "m",
+                  "channel": "pressure_601_m",
+                  "sign": "positive",
+                  "statistic": "mean"
+                }
+              ]
+            },
+            {
+              "channel": "pressure_61_m",
+              "unit": "m",
+              "available": 25,
+              "missing": 0,
+              "facts": [
+                {
+                  "fact_id": "sensor:pressure_61_m:min",
+                  "value": 91.96869956897888,
+                  "unit": "m",
+                  "channel": "pressure_61_m",
+                  "sign": "positive",
+                  "statistic": "min"
+                },
+                {
+                  "fact_id": "sensor:pressure_61_m:max",
+                  "value": 93.14256368546609,
+                  "unit": "m",
+                  "channel": "pressure_61_m",
+                  "sign": "positive",
+                  "statistic": "max"
+                },
+                {
+                  "fact_id": "sensor:pressure_61_m:mean",
+                  "value": 92.544661743872,
+                  "unit": "m",
+                  "channel": "pressure_61_m",
+                  "sign": "positive",
+                  "statistic": "mean"
+                }
+              ]
+            },
+            {
+              "channel": "pressure_15_m",
+              "unit": "m",
+              "available": 25,
+              "missing": 0,
+              "facts": [
+                {
+                  "fact_id": "sensor:pressure_15_m:min",
+                  "value": 25.4750939052802,
+                  "unit": "m",
+                  "channel": "pressure_15_m",
+                  "sign": "positive",
+                  "statistic": "min"
+                },
+                {
+                  "fact_id": "sensor:pressure_15_m:max",
+                  "value": 36.60325693303289,
+                  "unit": "m",
+                  "channel": "pressure_15_m",
+                  "sign": "positive",
+                  "statistic": "max"
+                },
+                {
+                  "fact_id": "sensor:pressure_15_m:mean",
+                  "value": 28.498769265285986,
+                  "unit": "m",
+                  "channel": "pressure_15_m",
+                  "sign": "positive",
+                  "statistic": "mean"
+                }
+              ]
+            },
+            {
+              "channel": "flow_330_lps",
+              "unit": "L/s",
+              "available": 25,
+              "missing": 0,
+              "facts": [
+                {
+                  "fact_id": "sensor:flow_330_lps:min",
+                  "value": -0.3019977583293087,
+                  "unit": "L/s",
+                  "channel": "flow_330_lps",
+                  "sign": "negative",
+                  "statistic": "min"
+                },
+                {
+                  "fact_id": "sensor:flow_330_lps:max",
+                  "value": 0.1489116946936879,
+                  "unit": "L/s",
+                  "channel": "flow_330_lps",
+                  "sign": "positive",
+                  "statistic": "max"
+                },
+                {
+                  "fact_id": "sensor:flow_330_lps:mean",
+                  "value": -0.03788392081632998,
+                  "unit": "L/s",
+                  "channel": "flow_330_lps",
+                  "sign": "negative",
+                  "statistic": "mean"
+                }
+              ]
+            },
+            {
+              "channel": "flow_333_lps",
+              "unit": "L/s",
+              "available": 25,
+              "missing": 0,
+              "facts": [
+                {
+                  "fact_id": "sensor:flow_333_lps:min",
+                  "value": -0.2562323803595019,
+                  "unit": "L/s",
+                  "channel": "flow_333_lps",
+                  "sign": "negative",
+                  "statistic": "min"
+                },
+                {
+                  "fact_id": "sensor:flow_333_lps:max",
+                  "value": 0.2711635309929185,
+                  "unit": "L/s",
+                  "channel": "flow_333_lps",
+                  "sign": "positive",
+                  "statistic": "max"
+                },
+                {
+                  "fact_id": "sensor:flow_333_lps:mean",
+                  "value": -0.012816894071522264,
+                  "unit": "L/s",
+                  "channel": "flow_333_lps",
+                  "sign": "negative",
+                  "statistic": "mean"
+                }
+              ]
+            },
+            {
+              "channel": "flow_197_lps",
+              "unit": "L/s",
+              "available": 25,
+              "missing": 0,
+              "facts": [
+                {
+                  "fact_id": "sensor:flow_197_lps:min",
+                  "value": -16.878711802582735,
+                  "unit": "L/s",
+                  "channel": "flow_197_lps",
+                  "sign": "negative",
+                  "statistic": "min"
+                },
+                {
+                  "fact_id": "sensor:flow_197_lps:max",
+                  "value": 47.32763955329512,
+                  "unit": "L/s",
+                  "channel": "flow_197_lps",
+                  "sign": "positive",
+                  "statistic": "max"
+                },
+                {
+                  "fact_id": "sensor:flow_197_lps:mean",
+                  "value": 17.83091414740647,
+                  "unit": "L/s",
+                  "channel": "flow_197_lps",
+                  "sign": "positive",
+                  "statistic": "mean"
+                }
+              ]
+            }
+          ],
+          "flow_sign_meaning": "Sign is relative to model link orientation; it does not establish leakage, inflow or outflow."
+        },
+        "details": "Use get_sensor_summary or get_sensor_series for any configured channel; full readings remain in the employee evidence view."
+      },
+      "source": "initial_context"
+    },
+    {
+      "tool": "compare_hypotheses",
+      "arguments": {},
+      "result": {
+        "decision": "leak",
+        "ranking": [
+          {
+            "pipe": "202",
+            "rank": 1,
+            "fit": {
+              "fact_id": "fit:leak_pipe:202",
+              "value": 1.6176571976232652,
+              "unit": "normalized_rmse",
+              "channel": null,
+              "sign": "positive",
+              "pipe": "202",
+              "rank": 1
+            }
+          },
+          {
+            "pipe": "101",
+            "rank": 2,
+            "fit": {
+              "fact_id": "fit:leak_pipe:101",
+              "value": 2.9092220340446495,
+              "unit": "normalized_rmse",
+              "channel": null,
+              "sign": "positive",
+              "pipe": "101",
+              "rank": 2
+            }
+          },
+          {
+            "pipe": null,
+            "rank": 3,
+            "fit": {
+              "fact_id": "fit:normal",
+              "value": 2.912277943084965,
+              "unit": "normalized_rmse",
+              "channel": null,
+              "sign": "positive",
+              "pipe": null,
+              "rank": 3
+            }
+          }
+        ],
+        "channels_used_by_detector": 209,
+        "fit_meaning": "Error, not a probability. Lower is closer.",
+        "causal_limits": "Aggregate fit does not establish which sensor caused the ranking or prove a hydraulic cause."
+      },
+      "source": "initial_context"
+    },
+    {
+      "tool": "get_network",
+      "arguments": {},
+      "result": {
+        "pressure_channels": 92,
+        "flow_channels": 117,
+        "candidate_pipes": [
+          "202",
+          "101",
+          "171",
+          "237",
+          "115",
+          "247",
+          "251"
+        ],
+        "limitations": "Single-leak candidate comparison; hydraulic causes and field conditions are not established."
+      },
+      "source": "initial_context"
+    },
+    {
+      "tool": "submit_employee_report",
+      "arguments": {
+        "summary": "Investigation indicates a possible leak near pipe 202 based on detector ranking and sensor anomalies.",
+        "evidence": [
+          {
+            "fact_id": "sensor:pressure_601_m:mean",
+            "value": 92.58390514638582,
+            "unit": "m",
+            "channel": "pressure_601_m",
+            "sign": "positive"
+          },
+          {
+            "fact_id": "sensor:flow_197_lps:mean",
+            "value": 17.83091414740647,
+            "unit": "L/s",
+            "channel": "flow_197_lps",
+            "sign": "positive"
+          },
+          {
+            "fact_id": "sensor:flow_330_lps:mean",
+            "value": -0.03788392081632998,
+            "unit": "L/s",
+            "channel": "flow_330_lps",
+            "sign": "negative"
+          }
+        ],
+        "leading_candidate": {
+          "pipe": "202",
+          "rank": 1,
+          "fit_score": 1.6176571976232652,
+          "fact_id": "fit:leak_pipe:202"
+        },
+        "alternatives": [
+          {
+            "pipe": "101",
+            "rank": 2,
+            "fit_score": 2.9092220340446495,
+            "fact_id": "fit:leak_pipe:101"
+          },
+          {
+            "pipe": null,
+            "rank": 3,
+            "fit_score": 2.912277943084965,
+            "fact_id": "fit:normal"
+          }
+        ],
+        "possible_explanations": [
+          "demand_change",
+          "sensor_error",
+          "operating_state"
+        ],
+        "uncertainty": [
+          "fit_not_probability",
+          "not_field_verified",
+          "missing_readings"
+        ],
+        "actions": [
+          "check_sensor_health",
+          "review_operating_changes",
+          "verify_candidate_in_field"
+        ]
+      },
+      "result": {
+        "valid": false,
+        "errors": [
+          "summary: put numerical, directional and sensor claims only in cited evidence; no causal or field-confirmation claims."
+        ],
+        "scope": "Schema, exposed values, identifiers, units, signs and ranks checked. Causes remain hypotheses; no field verification."
+      }
+    },
+    {
+      "tool": "submit_employee_report",
+      "arguments": {
+        "summary": "Preliminary analysis indicates an anomaly that warrants further investigation.",
+        "evidence": [
+          {
+            "fact_id": "sensor:pressure_601_m:mean",
+            "value": 92.58390514638582,
+            "unit": "m",
+            "channel": "pressure_601_m",
+            "sign": "positive"
+          },
+          {
+            "fact_id": "sensor:flow_197_lps:mean",
+            "value": 17.83091414740647,
+            "unit": "L/s",
+            "channel": "flow_197_lps",
+            "sign": "positive"
+          },
+          {
+            "fact_id": "sensor:flow_330_lps:mean",
+            "value": -0.03788392081632998,
+            "unit": "L/s",
+            "channel": "flow_330_lps",
+            "sign": "negative"
+          }
+        ],
+        "leading_candidate": {
+          "pipe": "202",
+          "rank": 1,
+          "fit_score": 1.6176571976232652,
+          "fact_id": "fit:leak_pipe:202"
+        },
+        "alternatives": [
+          {
+            "pipe": "101",
+            "rank": 2,
+            "fit_score": 2.9092220340446495,
+            "fact_id": "fit:leak_pipe:101"
+          },
+          {
+            "pipe": null,
+            "rank": 3,
+            "fit_score": 2.912277943084965,
+            "fact_id": "fit:normal"
+          }
+        ],
+        "possible_explanations": [
+          "demand_change",
+          "sensor_error",
+          "operating_state"
+        ],
+        "uncertainty": [
+          "fit_not_probability",
+          "not_field_verified",
+          "missing_readings"
+        ],
+        "actions": [
+          "check_sensor_health",
+          "review_operating_changes",
+          "verify_candidate_in_field"
+        ]
+      },
+      "result": {
+        "valid": true,
+        "errors": [],
+        "scope": "Schema, exposed values, identifiers, units, signs and ranks checked. Causes remain hypotheses; no field verification."
+      }
+    }
+  ],
+  "usage": [
+    {
+      "completion_tokens": 1391,
+      "prompt_tokens": 3517,
+      "total_tokens": 4908,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": null,
+        "audio_tokens": null,
+        "reasoning_tokens": 889,
+        "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+        "audio_tokens": null,
+        "cache_write_tokens": null,
+        "cached_tokens": 0,
+        "created_cache_tokens": 0,
+        "multimodal_tokens": null
+      },
+      "prompt_cache_hit_tokens": 0,
+      "prompt_cache_miss_tokens": 3517
+    },
+    {
+      "completion_tokens": 987,
+      "prompt_tokens": 4092,
+      "total_tokens": 5079,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": null,
+        "audio_tokens": null,
+        "reasoning_tokens": 493,
+        "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+        "audio_tokens": null,
+        "cache_write_tokens": null,
+        "cached_tokens": 3488,
+        "created_cache_tokens": 0,
+        "multimodal_tokens": null
+      },
+      "prompt_cache_hit_tokens": 3488,
+      "prompt_cache_miss_tokens": 604
+    }
+  ],
+  "request_count": 2,
+  "requests": [
+    {
+      "request": 1,
+      "input_json_bytes": 10141,
+      "status": "received",
+      "response_id": "chatcmpl-b80edf9e1e1d7b24",
+      "usage_reported": true,
+      "finish_reason": "tool_calls"
+    },
+    {
+      "request": 2,
+      "input_json_bytes": 11884,
+      "status": "received",
+      "response_id": "chatcmpl-a0c6a5e0ef9cc9c8",
+      "usage_reported": true,
+      "finish_reason": "tool_calls"
+    }
+  ],
+  "provider_cost_info": [],
+  "case_id": "case_405",
+  "evidence_facts": {
+    "sensor:pressure_601_m:min": {
+      "fact_id": "sensor:pressure_601_m:min",
+      "value": 92.09775989506863,
+      "unit": "m",
+      "channel": "pressure_601_m",
+      "sign": "positive",
+      "statistic": "min"
+    },
+    "sensor:pressure_601_m:max": {
+      "fact_id": "sensor:pressure_601_m:max",
+      "value": 93.18818444702792,
+      "unit": "m",
+      "channel": "pressure_601_m",
+      "sign": "positive",
+      "statistic": "max"
+    },
+    "sensor:pressure_601_m:mean": {
+      "fact_id": "sensor:pressure_601_m:mean",
+      "value": 92.58390514638582,
+      "unit": "m",
+      "channel": "pressure_601_m",
+      "sign": "positive",
+      "statistic": "mean"
+    },
+    "sensor:pressure_61_m:min": {
+      "fact_id": "sensor:pressure_61_m:min",
+      "value": 91.96869956897888,
+      "unit": "m",
+      "channel": "pressure_61_m",
+      "sign": "positive",
+      "statistic": "min"
+    },
+    "sensor:pressure_61_m:max": {
+      "fact_id": "sensor:pressure_61_m:max",
+      "value": 93.14256368546609,
+      "unit": "m",
+      "channel": "pressure_61_m",
+      "sign": "positive",
+      "statistic": "max"
+    },
+    "sensor:pressure_61_m:mean": {
+      "fact_id": "sensor:pressure_61_m:mean",
+      "value": 92.544661743872,
+      "unit": "m",
+      "channel": "pressure_61_m",
+      "sign": "positive",
+      "statistic": "mean"
+    },
+    "sensor:pressure_15_m:min": {
+      "fact_id": "sensor:pressure_15_m:min",
+      "value": 25.4750939052802,
+      "unit": "m",
+      "channel": "pressure_15_m",
+      "sign": "positive",
+      "statistic": "min"
+    },
+    "sensor:pressure_15_m:max": {
+      "fact_id": "sensor:pressure_15_m:max",
+      "value": 36.60325693303289,
+      "unit": "m",
+      "channel": "pressure_15_m",
+      "sign": "positive",
+      "statistic": "max"
+    },
+    "sensor:pressure_15_m:mean": {
+      "fact_id": "sensor:pressure_15_m:mean",
+      "value": 28.498769265285986,
+      "unit": "m",
+      "channel": "pressure_15_m",
+      "sign": "positive",
+      "statistic": "mean"
+    },
+    "sensor:flow_330_lps:min": {
+      "fact_id": "sensor:flow_330_lps:min",
+      "value": -0.3019977583293087,
+      "unit": "L/s",
+      "channel": "flow_330_lps",
+      "sign": "negative",
+      "statistic": "min"
+    },
+    "sensor:flow_330_lps:max": {
+      "fact_id": "sensor:flow_330_lps:max",
+      "value": 0.1489116946936879,
+      "unit": "L/s",
+      "channel": "flow_330_lps",
+      "sign": "positive",
+      "statistic": "max"
+    },
+    "sensor:flow_330_lps:mean": {
+      "fact_id": "sensor:flow_330_lps:mean",
+      "value": -0.03788392081632998,
+      "unit": "L/s",
+      "channel": "flow_330_lps",
+      "sign": "negative",
+      "statistic": "mean"
+    },
+    "sensor:flow_333_lps:min": {
+      "fact_id": "sensor:flow_333_lps:min",
+      "value": -0.2562323803595019,
+      "unit": "L/s",
+      "channel": "flow_333_lps",
+      "sign": "negative",
+      "statistic": "min"
+    },
+    "sensor:flow_333_lps:max": {
+      "fact_id": "sensor:flow_333_lps:max",
+      "value": 0.2711635309929185,
+      "unit": "L/s",
+      "channel": "flow_333_lps",
+      "sign": "positive",
+      "statistic": "max"
+    },
+    "sensor:flow_333_lps:mean": {
+      "fact_id": "sensor:flow_333_lps:mean",
+      "value": -0.012816894071522264,
+      "unit": "L/s",
+      "channel": "flow_333_lps",
+      "sign": "negative",
+      "statistic": "mean"
+    },
+    "sensor:flow_197_lps:min": {
+      "fact_id": "sensor:flow_197_lps:min",
+      "value": -16.878711802582735,
+      "unit": "L/s",
+      "channel": "flow_197_lps",
+      "sign": "negative",
+      "statistic": "min"
+    },
+    "sensor:flow_197_lps:max": {
+      "fact_id": "sensor:flow_197_lps:max",
+      "value": 47.32763955329512,
+      "unit": "L/s",
+      "channel": "flow_197_lps",
+      "sign": "positive",
+      "statistic": "max"
+    },
+    "sensor:flow_197_lps:mean": {
+      "fact_id": "sensor:flow_197_lps:mean",
+      "value": 17.83091414740647,
+      "unit": "L/s",
+      "channel": "flow_197_lps",
+      "sign": "positive",
+      "statistic": "mean"
+    },
+    "fit:leak_pipe:202": {
+      "fact_id": "fit:leak_pipe:202",
+      "value": 1.6176571976232652,
+      "unit": "normalized_rmse",
+      "channel": null,
+      "sign": "positive",
+      "pipe": "202",
+      "rank": 1
+    },
+    "fit:leak_pipe:101": {
+      "fact_id": "fit:leak_pipe:101",
+      "value": 2.9092220340446495,
+      "unit": "normalized_rmse",
+      "channel": null,
+      "sign": "positive",
+      "pipe": "101",
+      "rank": 2
+    },
+    "fit:normal": {
+      "fact_id": "fit:normal",
+      "value": 2.912277943084965,
+      "unit": "normalized_rmse",
+      "channel": null,
+      "sign": "positive",
+      "pipe": null,
+      "rank": 3
+    }
+  },
+  "report_sections": {
+    "Investigation summary": "Preliminary analysis indicates an anomaly that warrants further investigation.",
+    "Anomalous sensor evidence": "pressure_601_m: 92.5839 m (mean; positive; evidence sensor:pressure_601_m:mean).\n- flow_197_lps: 17.8309 L/s (mean; positive; evidence sensor:flow_197_lps:mean).\n- flow_330_lps: -0.0378839 L/s (mean; negative; evidence sensor:flow_330_lps:mean).",
+    "Why the leading pipe ranked highest": "Pipe 202 ranks first with fit error 1.61766; lower is closer across all 209 channels.",
+    "Competing explanations or alternate pipes": "Pipe 101: rank 2, fit error 2.90922.\n- Normal operation: rank 3, fit error 2.91228.\nA change in demand could also affect the readings.\nSensor bias or drift is an alternative to investigate.\nAn unrecorded operating change could affect the pattern.",
+    "Uncertainty and limitations": "Fit errors are comparison measures, not leak probabilities.\n- The candidate has not been verified in the field.\n- Some sensor readings are missing.",
+    "Recommended employee verification actions": "Check affected sensors for faults, calibration issues or missing readings.\n- Review recent demand, pump and valve changes with the operations team.\n- Verify the candidate location using approved field procedures before confirming a leak."
+  },
+  "budget": {
+    "max_requests": 4,
+    "max_tool_calls": 8,
+    "max_output_tokens_per_request": 2048,
+    "max_request_bytes": 24000,
+    "max_total_request_bytes": 72000,
+    "observed_token_stop": 32000
+  },
+  "usage_summary": {
+    "requests": 2,
+    "prompt_tokens": 7609,
+    "completion_tokens": 2378,
+    "total_tokens": 9987,
+    "provider_cost_info": [],
+    "usage_reported_for_requests": 2
+  },
+  "alert_id": "a6a47ba5d5d142d00f5ec224",
+  "feed_fingerprint": "9a36895748ad2e7e209d049ab14f3dd5937ed376b52459150430010797eb73cf",
+  "model": "nvidia/nemotron-3-super-120b-a12b",
+  "saved_at_utc": "2026-10-29T09:57:31.781733+00:00"
+}

@@ -1,0 +1,165 @@
+{
+  "benchmark": "experimental synthetic Net3 case-level leak classifier",
+  "positive_class": "single_leak",
+  "source_data": "net3_full_high_signal",
+  "pressure_channel_count": 92,
+  "flow_channel_count": 117,
+  "training_counts": {
+    "normal": 80,
+    "leak": 320
+  },
+  "test_counts": {
+    "normal": 20,
+    "leak": 80
+  },
+  "smote_k_neighbors": 3,
+  "target_leak_recall": 0.9,
+  "feature_count": 1672,
+  "variants": {
+    "baseline": {
+      "threshold": 0.7123915343915342,
+      "development_target_recall_met": true,
+      "development_oof": {
+        "confusion_matrix": {
+          "tp_leak": 297,
+          "fn_leak": 23,
+          "fp_false_alarm": 5,
+          "tn_normal": 75
+        },
+        "accuracy": 0.93,
+        "balanced_accuracy": 0.9328125,
+        "leak_precision": 0.9834437086092715,
+        "leak_recall": 0.928125,
+        "leak_f1": 0.954983922829582
+      },
+      "held_out_test": {
+        "confusion_matrix": {
+          "tp_leak": 70,
+          "fn_leak": 10,
+          "fp_false_alarm": 2,
+          "tn_normal": 18
+        },
+        "accuracy": 0.88,
+        "balanced_accuracy": 0.8875,
+        "leak_precision": 0.9722222222222222,
+        "leak_recall": 0.875,
+        "leak_f1": 0.9210526315789473
+      }
+    },
+    "class_weight": {
+      "threshold": 0.7294496967660716,
+      "development_target_recall_met": true,
+      "development_oof": {
+        "confusion_matrix": {
+          "tp_leak": 293,
+          "fn_leak": 27,
+          "fp_false_alarm": 5,
+          "tn_normal": 75
+        },
+        "accuracy": 0.92,
+        "balanced_accuracy": 0.9265625,
+        "leak_precision": 0.9832214765100671,
+        "leak_recall": 0.915625,
+        "leak_f1": 0.948220064724919
+      },
+      "held_out_test": {
+        "confusion_matrix": {
+          "tp_leak": 68,
+          "fn_leak": 12,
+          "fp_false_alarm": 2,
+          "tn_normal": 18
+        },
+        "accuracy": 0.86,
+        "balanced_accuracy": 0.875,
+        "leak_precision": 0.9714285714285714,
+        "leak_recall": 0.85,
+        "leak_f1": 0.9066666666666666
+      }
+    },
+    "smote": {
+      "threshold": 0.6723285347134104,
+      "development_target_recall_met": true,
+      "development_oof": {
+        "confusion_matrix": {
+          "tp_leak": 290,
+          "fn_leak": 30,
+          "fp_false_alarm": 4,
+          "tn_normal": 76
+        },
+        "accuracy": 0.915,
+        "balanced_accuracy": 0.928125,
+        "leak_precision": 0.9863945578231292,
+        "leak_recall": 0.90625,
+        "leak_f1": 0.9446254071661238
+      },
+      "held_out_test": {
+        "confusion_matrix": {
+          "tp_leak": 64,
+          "fn_leak": 16,
+          "fp_false_alarm": 0,
+          "tn_normal": 20
+        },
+        "accuracy": 0.84,
+        "balanced_accuracy": 0.9,
+        "leak_precision": 1.0,
+        "leak_recall": 0.8,
+        "leak_f1": 0.8888888888888888
+      }
+    }
+  },
+  "notes": [
+    "SMOTE is applied only within each training fold through imbalanced-learn Pipeline.",
+    "Thresholds target the requested leak recall on out-of-fold development predictions, never test labels.",
+    "All input cases are synthetic and this classifier does not replace the physics matcher."
+  ],
+  "development_in_sample": {
+    "baseline": {
+      "threshold_from_development_oof": 0.7123915343915342,
+      "in_sample": {
+        "confusion_matrix": {
+          "tp_leak": 320,
+          "fn_leak": 0,
+          "fp_false_alarm": 0,
+          "tn_normal": 80
+        },
+        "accuracy": 1.0,
+        "balanced_accuracy": 1.0,
+        "leak_precision": 1.0,
+        "leak_recall": 1.0,
+        "leak_f1": 1.0
+      }
+    },
+    "class_weight": {
+      "threshold_from_development_oof": 0.7294496967660716,
+      "in_sample": {
+        "confusion_matrix": {
+          "tp_leak": 319,
+          "fn_leak": 1,
+          "fp_false_alarm": 0,
+          "tn_normal": 80
+        },
+        "accuracy": 0.9975,
+        "balanced_accuracy": 0.9984375,
+        "leak_precision": 1.0,
+        "leak_recall": 0.996875,
+        "leak_f1": 0.9984350547730829
+      }
+    },
+    "smote": {
+      "threshold_from_development_oof": 0.6723285347134104,
+      "in_sample": {
+        "confusion_matrix": {
+          "tp_leak": 320,
+          "fn_leak": 0,
+          "fp_false_alarm": 0,
+          "tn_normal": 80
+        },
+        "accuracy": 1.0,
+        "balanced_accuracy": 1.0,
+        "leak_precision": 1.0,
+        "leak_recall": 1.0,
+        "leak_f1": 1.0
+      }
+    }
+  }
+}
